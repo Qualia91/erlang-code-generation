@@ -1,3 +1,4 @@
+import { userInfo } from 'os';
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -5,20 +6,21 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
-		isFileOk();
-		vscode.window.showInformationMessage('code-gen from erlang-code-generation!');
+		if (isFileOk()) {
+			vscode.window.showInformationMessage('code-gen from erlang-code-generation!');
+		};
 	});
 
 	let comment = vscode.commands.registerCommand('erlang-code-generation.comment-gen', () => {
-		//TODO Remove
-		vscode.window.showInformationMessage('comment-gen from erlang-code-generation!');
-		isFileOk();
-		createQuickPickBox(["Header", "Section", "Function"], "Select the comment template you wish to generate");
+		if (isFileOk()) {
+			createCommentQuickPickBox(["Header", "Section", "Function"], "Select the comment template you wish to generate");
+		};
 	});
 
 	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
-		isFileOk();
-		vscode.window.showInformationMessage('module-gen from erlang-code-generation!');
+		if (isFileOk()) {
+			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Empty"], "Select the module behavior you wish to implement");
+		};
 	});
 
 	context.subscriptions.push(code);
@@ -37,8 +39,8 @@ function isFileOk():boolean {
 		return false;
 	}
 
-	// check we have a go file open
-	if (!editor.document.fileName.endsWith(".erl") || !editor.document.fileName.endsWith(".hrl")) {
+	// check we have an erlang file open
+	if (!(editor.document.fileName.endsWith(".erl") || editor.document.fileName.endsWith(".hrl"))) {
 		vscode.window.showErrorMessage("File is not an erlang (.erl or .hrl) file");
 		return false;
 	}
@@ -46,7 +48,29 @@ function isFileOk():boolean {
 	return true;
 }
 
-function createQuickPickBox(pickableNames:string[], pickableTitle:string) {
+function createModuleQuickPickBox(pickableNames:string[], pickableTitle:string) {
+	vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
+		.then(item => {
+
+			if (item !== undefined) {
+				let editor = vscode.window.activeTextEditor;
+				if (editor !== undefined) {
+					if (editor !== undefined) {
+						var fileNameSplit = editor.document.fileName.replace(".erl", "").replace(".hrl", "").split("\\");
+						var fileName = fileNameSplit[fileNameSplit.length - 1];
+						insertText(editor, 
+							createModule(editor, item)
+								.replace(/<MODULE_NAME>/g, fileName)
+								.replace(/<USER_NAME>/g, userInfo().username),
+							editor.selection.start);
+					}
+				}
+			}
+
+		});
+}
+
+function createCommentQuickPickBox(pickableNames:string[], pickableTitle:string) {
 	vscode.window.showQuickPick(pickableNames, {canPickMany: true, placeHolder: pickableTitle})
 		.then(items => {
 
@@ -54,10 +78,16 @@ function createQuickPickBox(pickableNames:string[], pickableTitle:string) {
 				items.reverse().forEach(item => {
 					let editor = vscode.window.activeTextEditor;
 					if (editor !== undefined) {
+						var fileNameSplit = editor.document.fileName.replace(".erl", "").replace(".hrl", "").split("\\");
+						var fileName = fileNameSplit[fileNameSplit.length - 1];
 						var commentPositions = getCommentPositions(editor, item);
 						commentPositions.forEach(position => {
 							if (editor !== undefined) {
-								insertText(editor, createComment(editor, item), position);
+								insertText(editor, 
+									createComment(editor, item)
+									.replace(/<MODULE_NAME>/g, fileName)
+									.replace(/<USER_NAME>/g, userInfo().username),
+								position);
 							}
 						});
 					}
@@ -77,13 +107,13 @@ function createComment(editor:vscode.TextEditor, item:string):string {
 		case "Header":
 			return `
 %%%-----------------------------------------------------------------------------
-%%% @title TODO: <MODULE_TITLE>
-%%% @doc TODO: <MODULE_COMMENT_TITLE>
+%%% @title <MODULE_NAME>
+%%% @doc <MODULE_COMMENT_TITLE>
 %%%
-%%% TODO: <MODULE_COMMENT_SUBTITLE>
+%%% <MODULE_COMMENT>
 %%%
-%%% @author TODO: <USER_NAME>
-%%% @copyright TODO: <COPY_WRITE>
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
 %%% @version 0.0.1
 %%% @end
 %%%-----------------------------------------------------------------------------
@@ -91,7 +121,7 @@ function createComment(editor:vscode.TextEditor, item:string):string {
 		case "Section":
 			return `
 %%%=============================================================================
-%%% TODO: <SECTION_TITLE>
+%%% <SECTION_TITLE>
 %%%=============================================================================
 `;
 		case "Function":
@@ -118,5 +148,173 @@ function getCommentPositions(editor:vscode.TextEditor, item:string):vscode.Posit
 		default:
 			console.log("No such comment!");
 			return [];
+	}
+}
+
+function createModule(editor:vscode.TextEditor, item:string):string {
+	switch (item) {
+		case "Gen-Server":
+			return `%%%-----------------------------------------------------------------------------
+%%% @title <MODULE_NAME>
+%%% @doc
+%%%
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+-behaviour(gen_server).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% External API
+-export([start_link/0]).
+
+%% Callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+			terminate/2, code_change/3]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {}).
+-type loop_state() :: loop_state.
+
+%%%=============================================================================
+%%% API
+%%%=============================================================================
+
+-spec start_link() -> {ok, pid()} | {error, {already_started, pid()}} | {error, Reason::any()}.
+start_link() ->
+	gen_server:start_link({local, ?SERVER}, ?MODULE, #loop_state{}, []).
+
+%%%=============================================================================
+%%% Gen Server Callbacks
+%%%=============================================================================
+
+-spec init(loop_state()) -> {ok, loop_state()}.
+init(LoopState) ->
+	{ok, LoopState}.
+
+-spec handle_call(any(), pid(), loop_state()) -> {ok, any(), loop_state()}.
+handle_call(_Request, _From, LoopState) ->
+	Reply = ok,
+	{ok, Reply, LoopState}.
+
+
+-spec handle_cast(any(), loop_state()) -> {noreply, loop_state()}.
+handle_cast(_Msg, LoopState) ->
+	{noreply, LoopState}.
+
+-spec handle_info(any(), loop_state()) -> {noreply, loop_state()}.
+handle_info(_Info, LoopState) ->
+	{noreply, LoopState}.
+
+-spec terminate(any(), loop_state()) -> ok.
+terminate(_Reason, _LoopState) ->
+	ok.
+
+-spec code_change(any(), loop_state(), any()) -> {ok, loop_state()}.
+code_change(_OldVsn, LoopState, _Extra) ->
+	{ok, LoopState}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+`;
+		case "Supervisor":
+			return `%%%-----------------------------------------------------------------------------
+%%% @title <MODULE_NAME>
+%%% @doc
+%%%
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+-behaviour(supervisor).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% External API
+-export([start_link/0]).
+
+%% Callbacks
+-export([init/1]).
+
+-define(SERVER, ?MODULE).
+
+%%%=============================================================================
+%%% API
+%%%=============================================================================
+
+-spec start_link() -> supervisor:startlink_ret().
+start_link() ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+%%%=============================================================================
+%%% Callbacks
+%%%=============================================================================
+
+%% sup_flags() = #{strategy => strategy(),         % optional
+%%                 intensity => non_neg_integer(), % optional
+%%                 period => pos_integer()}        % optional
+%% child_spec() = #{id => child_id(),       % mandatory
+%%                  start => mfargs(),      % mandatory
+%%                  restart => restart(),   % optional
+%%                  shutdown => shutdown(), % optional
+%%                  type => worker(),       % optional
+%%                  modules => modules()}   % optional
+-spec init(list()) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}} | ignore.
+init([]) ->
+    SupFlags = #{strategy => one_for_all,
+                 intensity => 0,
+                 period => 1},
+    ChildSpecs = [],
+    {ok, {SupFlags, ChildSpecs}}.
+
+%%%=============================================================================
+%%% Internal
+%%%=============================================================================
+`;
+		default:
+			return `%%%-----------------------------------------------------------------------------
+%%% @title <MODULE_NAME>
+%%% @doc
+%%%
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+-define(SERVER, ?MODULE).
+
+%%%=============================================================================
+%%% API
+%%%=============================================================================
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+`;
 	}
 }

@@ -3,6 +3,11 @@
 	"displayName": "erlang-code-generation",
 	"description": "Generates boiler plate erlang code",
 	"version": "0.0.1",
+	"publisher": "bocdev", 
+	"repository": {
+		"type": "git",
+		"directory": "https://github.com/Qualia91/erlang-code-generation"
+	  },
 	"engines": {
 		"vscode": "^1.59.0"
 	},
