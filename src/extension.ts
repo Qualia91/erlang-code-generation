@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
 		if (isFileOk()) {
-			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Empty"], "Select the module behavior you wish to implement");
+			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty"], "Select the module behavior you wish to implement");
 		};
 	});
 
@@ -41,7 +41,7 @@ function isFileOk():boolean {
 
 	// check we have an erlang file open
 	if (!(editor.document.fileName.endsWith(".erl") || editor.document.fileName.endsWith(".hrl"))) {
-		vscode.window.showErrorMessage("File is not an erlang (.erl or .hrl) file");
+		vscode.window.showErrorMessage("File ".concat(editor.document.fileName).concat(" is not an erlang (.erl or .hrl) file"));
 		return false;
 	}
 
@@ -286,6 +286,26 @@ init([]) ->
 %%%=============================================================================
 %%% Internal
 %%%=============================================================================
+`;
+		case "Header":
+return `%%%-----------------------------------------------------------------------------
+%%% @title <MODULE_NAME>
+%%% @doc
+%%%
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+%%%=============================================================================
+%%% Global Record Definitions
+%%%=============================================================================
+
+%% example record
+-record(example_record, {}).
+-type example_record() :: example_record.
+
 `;
 		default:
 			return `%%%-----------------------------------------------------------------------------

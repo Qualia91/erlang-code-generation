@@ -7,7 +7,7 @@ This is an Extension for Visual Studio Code to generate some boilerplate code fo
 Currently Supported Generation:
 
 - Comments
-- Modules (gen_server, supervisor, general)
+- Modules (gen_server, supervisor, header files, general)
 
 ## Usage
 
