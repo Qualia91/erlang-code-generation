@@ -6,9 +6,9 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
-		// if (isFileOk()) {
-		// 	createCodeQuickPickBox(["Case", "Fun", "If", "Receive", "Try/Catch"], "Select the code snippet you wish to generate");
-		// };
+		if (isFileOk()) {
+			createCodeQuickPickBox(["Case", "Receive", "Try/Catch", "Eunit"], "Select the code snippet you wish to generate");
+		};
 	});
 
 	let comment = vscode.commands.registerCommand('erlang-code-generation.comment-gen', () => {
@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (isFileOk()) {
 			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty", "CT"], "Select the module behavior you wish to implement");
 		};
-	})
+	});
 
 	context.subscriptions.push(code);
 	context.subscriptions.push(comment);
@@ -49,21 +49,21 @@ function isFileOk():boolean {
 }
 
 function createCodeQuickPickBox(pickableNames:string[], pickableTitle:string) {
-	// vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
-	// 	.then(item => {
+	vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
+		.then(item => {
 
-	// 		if (item !== undefined) {
-	// 			let editor = vscode.window.activeTextEditor;
-	// 			if (editor !== undefined) {
-	// 				if (editor !== undefined) {
-	// 					insertText(editor, 
-	// 						createCodeSnippet(editor, item),
-	// 						editor.selection.start);
-	// 				}
-	// 			}
-	// 		}
+			if (item !== undefined) {
+				let editor = vscode.window.activeTextEditor;
+				if (editor !== undefined) {
+					if (editor !== undefined) {
+						insertText(editor, 
+							createCodeSnippet(editor, item),
+							editor.selection.start);
+					}
+				}
+			}
 
-	// 	});
+		});
 }
 
 function createModuleQuickPickBox(pickableNames:string[], pickableTitle:string) {
@@ -219,7 +219,7 @@ start_link() ->
 %%% Gen Server Callbacks
 %%%=============================================================================
 
--spec init(list()) -> {ok, ()}.
+-spec init(list()) -> {ok, loop_state()}.
 init([]) ->
 	LoopState = #loop_state{}, 
 	{ok, LoopState}.
@@ -441,6 +441,49 @@ example_test(_Config) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.
+`;
+	}
+}
+
+function createCodeSnippet(editor:vscode.TextEditor, item:string):string {
+	switch (item) {
+		case "Case":
+			return `case VAR of
+	_ ->
+		ok
+end,`;
+		case "Receive":
+	return `receive
+	_ ->
+		ok
+after
+	Timeout ->
+		ok
+end,`;
+		case "Try/Catch":
+	return `try THIS of
+	_ ->
+		ok
+catch
+	ERROR_TYPE:ERROR ->
+		ok
+end,`;
+		default:
+			return `
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
 
 %%%===================================================================
 %%% Tests
