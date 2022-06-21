@@ -6,9 +6,9 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
-		if (isFileOk()) {
-			vscode.window.showInformationMessage('code-gen from erlang-code-generation!');
-		};
+		// if (isFileOk()) {
+		// 	createCodeQuickPickBox(["Case", "Fun", "If", "Receive", "Try/Catch"], "Select the code snippet you wish to generate");
+		// };
 	});
 
 	let comment = vscode.commands.registerCommand('erlang-code-generation.comment-gen', () => {
@@ -46,6 +46,24 @@ function isFileOk():boolean {
 	}
 
 	return true;
+}
+
+function createCodeQuickPickBox(pickableNames:string[], pickableTitle:string) {
+	// vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
+	// 	.then(item => {
+
+	// 		if (item !== undefined) {
+	// 			let editor = vscode.window.activeTextEditor;
+	// 			if (editor !== undefined) {
+	// 				if (editor !== undefined) {
+	// 					insertText(editor, 
+	// 						createCodeSnippet(editor, item),
+	// 						editor.selection.start);
+	// 				}
+	// 			}
+	// 		}
+
+	// 	});
 }
 
 function createModuleQuickPickBox(pickableNames:string[], pickableTitle:string) {
@@ -324,6 +342,9 @@ return `%%%---------------------------------------------------------------------
 %%%=============================================================================
 %%% Exports and Definitions
 %%%=============================================================================
+
+%% External API
+-export([]).
 
 -define(SERVER, ?MODULE).
 
