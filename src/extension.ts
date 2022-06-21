@@ -19,9 +19,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
 		if (isFileOk()) {
-			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty"], "Select the module behavior you wish to implement");
+			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty", "CT"], "Select the module behavior you wish to implement");
 		};
-	});
+	})
 
 	context.subscriptions.push(code);
 	context.subscriptions.push(comment);
@@ -186,6 +186,10 @@ function createModule(editor:vscode.TextEditor, item:string):string {
 -author(<USER_NAME>).
 -behaviour(gen_server).
 
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
 %%%=============================================================================
 %%% Exports and Definitions
 %%%=============================================================================
@@ -209,20 +213,21 @@ function createModule(editor:vscode.TextEditor, item:string):string {
 
 -spec start_link() -> {ok, pid()} | {error, {already_started, pid()}} | {error, Reason::any()}.
 start_link() ->
-	gen_server:start_link({local, ?SERVER}, ?MODULE, #loop_state{}, []).
+	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%=============================================================================
 %%% Gen Server Callbacks
 %%%=============================================================================
 
--spec init(loop_state()) -> {ok, loop_state()}.
-init(LoopState) ->
+-spec init(list()) -> {ok, ()}.
+init([]) ->
+	LoopState = #loop_state{}, 
 	{ok, LoopState}.
 
 -spec handle_call(any(), pid(), loop_state()) -> {ok, any(), loop_state()}.
 handle_call(_Request, _From, LoopState) ->
 	Reply = ok,
-	{ok, Reply, LoopState}.
+	{reply, Reply, LoopState}.
 
 
 -spec handle_cast(any(), loop_state()) -> {noreply, loop_state()}.
@@ -244,6 +249,17 @@ code_change(_OldVsn, LoopState, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.
 `;
 		case "Supervisor":
 			return `%%%-----------------------------------------------------------------------------
@@ -325,6 +341,72 @@ return `%%%---------------------------------------------------------------------
 -type example_record() :: example_record.
 
 `;
+		case "CT":
+			return `%%%-----------------------------------------------------------------------------
+%%% @title <MODULE_NAME>
+%%% @doc
+%%%
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+
+-include_lib("common_test/include/ct.hrl").
+-include_lib("stdlib/include/assert.hrl").
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+-define(SERVER, ?MODULE).
+
+-export([
+	all/0, 
+	init_per_suite/1, 
+	init_per_testcase/2, 
+	end_per_testcase/2, 
+	end_per_suite/1
+]).
+
+-export([
+    example_test/1
+]).
+
+%%%=============================================================================
+%%% CT Functions
+%%%=============================================================================
+
+all() -> 
+    [example_test].
+
+init_per_suite(Config) ->
+    Config.
+
+init_per_testcase(_TestName, Config) ->
+    Config.
+ 
+end_per_testcase(_TestName, Config) ->
+    Config.
+
+end_per_suite(Config) ->
+    Config.
+
+%%%=============================================================================
+%%% Tests
+%%%=============================================================================
+
+example_test(_Config) ->
+	?assertEqual(true, true, <<"Example Comment">>).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+`;
 		default:
 			return `%%%-----------------------------------------------------------------------------
 %%% @title <MODULE_NAME>
@@ -339,6 +421,10 @@ return `%%%---------------------------------------------------------------------
 -module(<MODULE_NAME>).
 -author(<USER_NAME>).
 
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
 %%%=============================================================================
 %%% Exports and Definitions
 %%%=============================================================================
@@ -352,10 +438,20 @@ return `%%%---------------------------------------------------------------------
 %%% API
 %%%=============================================================================
 
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.
 `;
 	}
 }
