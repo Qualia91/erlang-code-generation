@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
 		if (isFileOk()) {
-			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty", "CT", "Poolboy Worker"], "Select the module behavior you wish to implement");
+			createModuleQuickPickBox(["Gen Server", "Supervisor", "Header", "Empty", "CT", "Poolboy Worker"], "Select the module behavior you wish to implement");
 		};
 	});
 
@@ -170,7 +170,7 @@ function getCommentPositions(editor:vscode.TextEditor, item:string):vscode.Posit
 
 function createModule(editor:vscode.TextEditor, item:string):string {
 	switch (item) {
-		case "Gen-Server":
+		case "Gen Server":
 			return `%%%-----------------------------------------------------------------------------
 %%% @doc
 %%%
