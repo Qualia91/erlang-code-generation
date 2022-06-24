@@ -7,7 +7,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
 		if (isFileOk()) {
-			createCodeQuickPickBox(["Case", "Receive", "Try/Catch", "Eunit"], "Select the code snippet you wish to generate");
+			createCodeQuickPickBox(["Case", "Receive", "Try/Catch", "Eunit", "Poolboy Specs"], "Select the code snippet you wish to generate");
 		};
 	});
 
@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
 		if (isFileOk()) {
-			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty", "CT"], "Select the module behavior you wish to implement");
+			createModuleQuickPickBox(["Gen-Server", "Supervisor", "Header", "Empty", "CT", "Poolboy Worker"], "Select the module behavior you wish to implement");
 		};
 	});
 
@@ -125,7 +125,6 @@ function createComment(editor:vscode.TextEditor, item:string):string {
 		case "Header":
 			return `
 %%%-----------------------------------------------------------------------------
-%%% @title <MODULE_NAME>
 %%% @doc <MODULE_COMMENT_TITLE>
 %%%
 %%% <MODULE_COMMENT>
@@ -173,7 +172,6 @@ function createModule(editor:vscode.TextEditor, item:string):string {
 	switch (item) {
 		case "Gen-Server":
 			return `%%%-----------------------------------------------------------------------------
-%%% @title <MODULE_NAME>
 %%% @doc
 %%%
 %%% @author <USER_NAME>
@@ -263,7 +261,6 @@ example_test() ->
 `;
 		case "Supervisor":
 			return `%%%-----------------------------------------------------------------------------
-%%% @title <MODULE_NAME>
 %%% @doc
 %%%
 %%% @author <USER_NAME>
@@ -323,7 +320,6 @@ init([]) ->
 `;
 		case "Header":
 return `%%%-----------------------------------------------------------------------------
-%%% @title <MODULE_NAME>
 %%% @doc
 %%%
 %%% @author <USER_NAME>
@@ -343,7 +339,6 @@ return `%%%---------------------------------------------------------------------
 `;
 		case "CT":
 			return `%%%-----------------------------------------------------------------------------
-%%% @title <MODULE_NAME>
 %%% @doc
 %%%
 %%% @author <USER_NAME>
@@ -407,9 +402,103 @@ example_test(_Config) ->
 %%%===================================================================
 
 `;
+		case "Poolboy Worker":
+			return `%%%-----------------------------------------------------------------------------
+%%% @doc
+%%%
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+-behaviour(poolboy_worker).
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% External API
+-export([start_link/1]).
+
+%% Callbacks
+-export([
+	init/1, 
+	handle_call/3, 
+	handle_cast/2, 
+	handle_info/2,
+	terminate/2, 
+	code_change/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+}).
+-type loop_state() :: loop_state.
+
+%%%=============================================================================
+%%% API
+%%%=============================================================================
+
+-spec start_link(map()) -> {ok, pid()} | {error, {already_started, pid()}} | {error, Reason::any()}.
+start_link(Args) ->
+	gen_server:start_link(?MODULE, Args, []).
+
+%%%=============================================================================
+%%% Gen Server Callbacks
+%%%=============================================================================
+
+-spec init(map()) -> {ok, loop_state()}.
+init(Args) ->
+	process_flag(trap_exit, true),
+	{ok, #loop_state{}}.
+
+-spec handle_call(any(), pid(), loop_state()) -> {ok, any(), loop_state()}.
+handle_call(_Request, _From, LoopState) ->
+	Reply = ok,
+	{reply, Reply, LoopState}.
+
+-spec handle_cast(any(), loop_state()) -> {noreply, loop_state()}.
+handle_cast(_Msg, LoopState) ->
+	{noreply, LoopState}.
+
+-spec handle_info(any(), loop_state()) -> {noreply, loop_state()}.
+handle_info(_Info, LoopState) ->
+	{noreply, LoopState}.
+
+-spec terminate(any(), loop_state()) -> ok.
+terminate(_Reason, _LoopState) ->
+	ok.
+
+-spec code_change(any(), loop_state(), any()) -> {ok, loop_state()}.
+code_change(_OldVsn, LoopState, _Extra) ->
+	{ok, LoopState}.
+
+%%%=============================================================================
+%%% Internal
+%%%=============================================================================
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+example_test() ->
+	?assertEqual(true, true).
+
+-endif.			
+`;
 		default:
 			return `%%%-----------------------------------------------------------------------------
-%%% @title <MODULE_NAME>
 %%% @doc
 %%%
 %%% @author <USER_NAME>
@@ -479,6 +568,13 @@ catch
 	ERROR_TYPE:ERROR ->
 		ok
 end,`;
+		case "Poolboy Specs":
+			return `{ok, Pools} = application:get_env(<APPLICATION_NAME>, pools),
+PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
+	WorkerImpl = proplists:get_value(worker_impl, WorkerArgs),
+	PoolArgs = [{name, {local, Name}},
+				{worker_module, WorkerImpl}] ++ SizeArgs,
+	poolboy:child_spec(Name, PoolArgs, WorkerArgs)`;
 		default:
 			return `
 -ifdef(TEST).
