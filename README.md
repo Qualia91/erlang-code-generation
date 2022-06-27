@@ -22,6 +22,9 @@ Currently Supported Generation:
     - [Try/Catch](#try-catch)
     - [Eunit](#eunit)
     - [Poolboy Specs](#poolboy-specs)
+    - [Cowboy Web Supervisor](#cowboy-web-supervisor)
+    - [Worker Child Spec](#worker-child-spec)
+    - [Supervisor Child Spec](#supervisor-child-spec)
 
     Snippets
 Case
@@ -491,4 +494,39 @@ PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
 	PoolArgs = [{name, {local, Name}},
 				{worker_module, WorkerImpl}] ++ SizeArgs,
 	poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+```
+### Cowboy Web Supervisor
+```erlang
+Dispatch = cowboy_router:compile([
+	{'_', [
+		{"/endpoint", endpoint, [{stats_interval, 10000}]}
+	]}
+]),
+{ok, _} = cowboy:start_clear(
+	http,
+	[
+		{port, PORT}
+	],
+	#{env=>#{dispatch=>Dispatch}}
+),
+```
+### Worker Child Spec
+```erlang
+#{
+	id => <ID>,
+	start => {<MODULE>, start_link, []},
+	restart => permanent,
+	shutdown => brutal_kill,
+	type => worker
+}
+```
+### Supervisor Child Spec
+```erlang
+#{
+	id => <ID>,
+	start => {<MODULE>, start_link, []},
+	restart => permanent,
+	shutdown => brutal_kill,
+	type => supervisor
+}
 ```

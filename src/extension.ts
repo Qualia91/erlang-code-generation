@@ -7,7 +7,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
 		if (isFileOk()) {
-			createCodeQuickPickBox(["Case", "Receive", "Try/Catch", "Eunit", "Poolboy Specs"], "Select the code snippet you wish to generate");
+			createCodeQuickPickBox(["Case", "Receive", "Try/Catch", "Eunit", "Poolboy Specs", "Cowboy Web Supervisor", "Worker Child Spec", "Supervisor Child Spec"], "Select the code snippet you wish to generate");
 		};
 	});
 
@@ -552,14 +552,35 @@ function createCodeSnippet(editor:vscode.TextEditor, item:string):string {
 	_ ->
 		ok
 end,`;
-		case "Receive":
-	return `receive
-	_ ->
-		ok
-after
-	Timeout ->
-		ok
-end,`;
+		case "Worker Child Spec":
+	return `#{
+	id => <ID>,
+	start => {<MODULE>, start_link, []},
+	restart => permanent,
+	shutdown => brutal_kill,
+	type => worker
+}`;
+		case "Supervisor Child Spec":
+	return `#{
+	id => <ID>,
+	start => {<MODULE>, start_link, []},
+	restart => permanent,
+	shutdown => brutal_kill,
+	type => supervisor
+}`;
+		case "Cowboy Web Supervisor":
+	return `Dispatch = cowboy_router:compile([
+	{'_', [
+		{"/endpoint", endpoint, [{stats_interval, 10000}]}
+	]}
+]),
+{ok, _} = cowboy:start_clear(
+	http,
+	[
+		{port, PORT}
+	],
+	#{env=>#{dispatch=>Dispatch}}
+),`;
 		case "Try/Catch":
 	return `try THIS of
 	_ ->
