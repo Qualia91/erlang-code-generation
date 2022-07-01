@@ -2,7 +2,7 @@
 	"name": "erlang-code-generation",
 	"displayName": "erlang-code-generation",
 	"description": "Generates boiler plate erlang code",
-	"version": "0.0.7",
+	"version": "0.0.8",
 	"publisher": "bocdev", 
 	"repository": {
 		"type": "git",

@@ -595,7 +595,8 @@ PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
 	WorkerImpl = proplists:get_value(worker_impl, WorkerArgs),
 	PoolArgs = [{name, {local, Name}},
 				{worker_module, WorkerImpl}] ++ SizeArgs,
-	poolboy:child_spec(Name, PoolArgs, WorkerArgs)`;
+	poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+end, Pools),`;
 		default:
 			return `
 -ifdef(TEST).
