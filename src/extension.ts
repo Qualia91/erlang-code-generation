@@ -7,19 +7,42 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
 		if (isFileOk()) {
-			createCodeQuickPickBox(["Case", "Receive", "Try/Catch", "Eunit", "Poolboy Specs", "Cowboy Web Supervisor", "Worker Child Spec", "Supervisor Child Spec"], "Select the code snippet you wish to generate");
+			createCodeQuickPickBox([
+				"Case", 
+				"Receive", 
+				"Try/Catch", 
+				"Eunit", 
+				"Poolboy Specs", 
+				"Cowboy Web Supervisor", 
+				"Worker Child Spec", 
+				"Supervisor Child Spec"
+			], "Select the code snippet you wish to generate");
 		};
 	});
 
 	let comment = vscode.commands.registerCommand('erlang-code-generation.comment-gen', () => {
 		if (isFileOk()) {
-			createCommentQuickPickBox(["Header", "Section", "Function"], "Select the comment template you wish to generate");
+			createCommentQuickPickBox([
+				"Header", 
+				"Section", 
+				"Function"
+			], "Select the comment template you wish to generate");
 		};
 	});
 
 	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
 		if (isFileOk()) {
-			createModuleQuickPickBox(["Gen Server", "Supervisor", "Header", "Empty", "CT", "Poolboy Worker"], "Select the module behavior you wish to implement");
+			createModuleQuickPickBox([
+				"Gen Server", 
+				"Supervisor", 
+				"Header", 
+				"Empty", 
+				"CT", 
+				"Poolboy Worker", 
+				"Cowboy Websocket Handler",
+				"Cowboy REST Handler",
+				"Lager Handler"
+			], "Select the module behavior you wish to implement");
 		};
 	});
 
@@ -170,6 +193,272 @@ function getCommentPositions(editor:vscode.TextEditor, item:string):vscode.Posit
 
 function createModule(editor:vscode.TextEditor, item:string):string {
 	switch (item) {
+		case "Cowboy Websocket Handler":
+			return `%%%-----------------------------------------------------------------------------
+%%% @doc
+%%% Cowboy websocket handler.
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% Websocket Callbacks
+-export([
+    init/2,
+    websocket_init/1,
+    websocket_handle/2,
+    websocket_info/2,
+    terminate/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	ping_interval :: integer()
+}).
+-type loop_state() :: loop_state.
+
+%%%=============================================================================
+%%% Websocket Callbacks
+%%%=============================================================================
+
+init(Req, [{ping_interval, Interval}]) ->
+    {cowboy_websocket, Req, #loop_state{
+        ping_interval = Interval
+    }}.
+
+websocket_init(LoopState = #loop_state{ping_interval = Interval}) ->
+	lager:debug("Websocket init, pinging every ~p ms~n", [Interval]),
+	erlang:start_timer(Interval, self(), ping),
+	{reply, {binary, <<"ping">>}, LoopState}.
+
+websocket_handle({_, <<"pong">>}, LoopState = #loop_state{ping_interval = Interval}) ->
+	erlang:start_timer(Interval, self(), ping),
+	{ok, LoopState};
+websocket_handle(Msg, LoopState) ->
+	lager:debug("Unhandled websocket_handle: ~p~n", [Msg]),
+	{ok, LoopState}.
+
+websocket_info({timeout, _Ref, ping}, LoopState) ->
+	{reply, {text, <<"ping">>}, LoopState};
+websocket_info(Info, State) ->
+	lager:debug("Unknown websocket_info: ~p", [Info]),
+	{ok, State}.
+
+terminate(_Reason, _Req, _LoopState) ->
+	lager:debug("Websocket connection terminated"),
+	ok.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.
+`;
+		case "Lager Handler":
+	return `%%%-----------------------------------------------------------------------------
+%%% @doc
+%%% Lager Handler.
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+-behaviour(gen_event).
+
+-include_lib("lager/include/lager.hrl").
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+-define(SERVER, ?MODULE).
+
+%% Websocket Callbacks
+-export([
+    init/1,
+    handle_call/2,
+    handle_event/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
+
+-type lager_msg_metadata() :: [tuple()].
+-type binary_proplist() :: [{binary(), binary()}].
+
+%% Loop state
+-record(state, {
+	level :: integer()
+}).
+-type state() :: state.
+
+%%%=============================================================================
+%%% Behaviour Impl
+%%%=============================================================================
+
+-spec init(list()) -> {ok, state()}.
+init([Level, RetryTimes, RetryInterval, Token]) ->
+    State = #state{
+                    level = lager_util:level_to_num(Level)
+                  },
+    {ok, State}.
+
+-spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
+handle_call(get_loglevel, #state{ level = Level } = State) ->
+    {ok, Level, State};
+handle_call({set_loglevel, Level}, State) ->
+    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
+handle_call(_Request, State) ->
+    {ok, ok, State}.
+   
+-spec handle_event({log, any()}, state()) -> {ok, state()}.
+handle_event({log, Message}, #state{level=Level} = State) ->
+	ok;
+handle_event(_Event, State) ->
+    {ok, State}.
+
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+	?assertEqual(true, true).
+
+-endif.
+`;
+		case "Cowboy REST Handler":
+			return `%%%-----------------------------------------------------------------------------
+%%% @doc
+%%% Cowboy REST handler.
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% Websocket Callbacks
+-export([
+    init/2,
+	allowed_methods/2,
+    content_types_provided/2,
+    content_types_accepted/2
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	
+}).
+-type loop_state() :: loop_state.
+
+%%%=============================================================================
+%%% REST Callbacks
+%%%=============================================================================
+
+init(Req, Opts) ->
+	{cowboy_rest, Req, Opts}.
+
+%%-----------------------------------------------------------------------------
+%% @doc
+%% REST methods supported by handler
+%% @end
+%%-----------------------------------------------------------------------------
+allowed_methods(Req, State) ->
+	{[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
+
+%%-----------------------------------------------------------------------------
+%% @doc
+%% Define handler functions for PUT?POST type calls, with parameters if needed.
+%% @end
+%%-----------------------------------------------------------------------------
+content_types_provided(Req, State) ->
+	{[
+		{{<<"text">>, <<"html">>, []}, get_function},
+		{{<<"application">>, <<"json">>, []}, get_function},
+		{{<<"text">>, <<"plain">>, []}, get_function}
+	], Req, State}.
+
+%%-----------------------------------------------------------------------------
+%% @doc 
+%% Define handler functions for GET and HEAD calls, with parameters if needed.
+%% @end
+%%-----------------------------------------------------------------------------
+content_types_accepted(Req, State) ->
+	{[
+		{{<<"text">>, <<"html">>, []}, put_function},
+		{{<<"application">>, <<"json">>, []}, put_function},
+		{{<<"text">>, <<"plain">>, []}, put_function}
+	], Req, State}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+get_function(Req, State) ->
+	{<<"">>, Req, State}.
+
+put_function(Req, State) ->
+	Req1 = cowboy_req:reply(200, #{}, <<"Response">>, Req),
+    {stop, Req1, State}.
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.
+`;
 		case "Gen Server":
 			return `%%%-----------------------------------------------------------------------------
 %%% @doc
@@ -183,10 +472,6 @@ function createModule(editor:vscode.TextEditor, item:string):string {
 -module(<MODULE_NAME>).
 -author(<USER_NAME>).
 -behaviour(gen_server).
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
 
 %%%=============================================================================
 %%% Exports and Definitions
@@ -253,6 +538,8 @@ code_change(_OldVsn, LoopState, _Extra) ->
 %%%===================================================================
 
 -ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
 
 example_test() ->
     ?assertEqual(true, true).
@@ -416,10 +703,6 @@ example_test(_Config) ->
 -author(<USER_NAME>).
 -behaviour(poolboy_worker).
 
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
-
 %%%=============================================================================
 %%% Exports and Definitions
 %%%=============================================================================
@@ -492,6 +775,8 @@ code_change(_OldVsn, LoopState, _Extra) ->
 
 -ifdef(TEST).
 
+-include_lib("eunit/include/eunit.hrl").
+
 example_test() ->
 	?assertEqual(true, true).
 
@@ -509,10 +794,6 @@ example_test() ->
 
 -module(<MODULE_NAME>).
 -author(<USER_NAME>).
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
 
 %%%=============================================================================
 %%% Exports and Definitions
@@ -536,6 +817,8 @@ example_test() ->
 %%%===================================================================
 
 -ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
 
 example_test() ->
     ?assertEqual(true, true).
@@ -571,7 +854,7 @@ end,`;
 		case "Cowboy Web Supervisor":
 	return `Dispatch = cowboy_router:compile([
 	{'_', [
-		{"/endpoint", endpoint, [{stats_interval, 10000}]}
+		{"/", endpoint, [{ping_interval, 10000}]}
 	]}
 ]),
 {ok, _} = cowboy:start_clear(
@@ -589,6 +872,14 @@ catch
 	ERROR_TYPE:ERROR ->
 		ok
 end,`;
+		case "Receive":
+	return `receive
+	Case ->
+		ok
+after
+	Timeout ->
+		ok
+end,`;
 		case "Poolboy Specs":
 			return `{ok, Pools} = application:get_env(<APPLICATION_NAME>, pools),
 PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
@@ -599,15 +890,13 @@ PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
 end, Pools),`;
 		default:
 			return `
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
-
 %%%===================================================================
 %%% Tests
 %%%===================================================================
 
 -ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
 
 example_test() ->
     ?assertEqual(true, true).

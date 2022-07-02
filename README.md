@@ -16,6 +16,9 @@ Currently Supported Generation:
     - [Empty](#empty)
     - [CT](#ct)
     - [Poolboy Worker](#poolboy-worker)
+    - [Cowboy Websocket Handler](#cowboy-websocket-handler)
+    - [Cowboy REST Handler](#cowboy-rest-handler)
+    - [Lager Handler](#lager-handler)
 - [Snippets](#snippets)
     - [Case](#case)
     - [Receive](#receive)
@@ -441,6 +444,275 @@ example_test() ->
 
 -endif.		
 ```
+### Cowboy Websocket Handler
+```erlang
+%%%-----------------------------------------------------------------------------
+%%% @doc
+%%% Cowboy websocket handler.
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% Websocket Callbacks
+-export([
+    init/2,
+    websocket_init/1,
+    websocket_handle/2,
+    websocket_info/2,
+    terminate/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	ping_interval :: integer()
+}).
+-type loop_state() :: loop_state.
+
+%%%=============================================================================
+%%% Websocket Callbacks
+%%%=============================================================================
+
+init(Req, [{ping_interval, Interval}]) ->
+    {cowboy_websocket, Req, #loop_state{
+        ping_interval = Interval
+    }}.
+
+websocket_init(LoopState = #loop_state{ping_interval = Interval}) ->
+	lager:debug("Websocket init, pinging every ~p ms~n", [Interval]),
+	erlang:start_timer(Interval, self(), ping),
+	{reply, {binary, <<"ping">>}, LoopState}.
+
+websocket_handle({_, <<"pong">>}, LoopState = #loop_state{ping_interval = Interval}) ->
+	erlang:start_timer(Interval, self(), ping),
+	{ok, LoopState};
+websocket_handle(Msg, LoopState) ->
+	lager:debug("Unhandled websocket_handle: ~p~n", [Msg]),
+	{ok, LoopState}.
+
+websocket_info({timeout, _Ref, ping}, LoopState) ->
+	{reply, {text, <<"ping">>}, LoopState};
+websocket_info(Info, State) ->
+	lager:debug("Unknown websocket_info: ~p", [Info]),
+	{ok, State}.
+
+terminate(_Reason, _Req, _LoopState) ->
+	lager:debug("Websocket connection terminated"),
+	ok.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.	
+```
+### Cowboy REST Handler
+```erlang
+%%%-----------------------------------------------------------------------------
+%%% @doc
+%%% Cowboy REST handler.
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+%% Websocket Callbacks
+-export([
+    init/2,
+	allowed_methods/2,
+    content_types_provided/2,
+    content_types_accepted/2
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	
+}).
+-type loop_state() :: loop_state.
+
+%%%=============================================================================
+%%% REST Callbacks
+%%%=============================================================================
+
+init(Req, Opts) ->
+	{cowboy_rest, Req, Opts}.
+
+%%-----------------------------------------------------------------------------
+%% @doc
+%% REST methods supported by handler
+%% @end
+%%-----------------------------------------------------------------------------
+allowed_methods(Req, State) ->
+	{[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
+
+%%-----------------------------------------------------------------------------
+%% @doc
+%% Define handler functions for PUT?POST type calls, with parameters if needed.
+%% @end
+%%-----------------------------------------------------------------------------
+content_types_provided(Req, State) ->
+	{[
+		{{<<"text">>, <<"html">>, []}, get_function},
+		{{<<"application">>, <<"json">>, []}, get_function},
+		{{<<"text">>, <<"plain">>, []}, get_function}
+	], Req, State}.
+
+%%-----------------------------------------------------------------------------
+%% @doc 
+%% Define handler functions for GET and HEAD calls, with parameters if needed.
+%% @end
+%%-----------------------------------------------------------------------------
+content_types_accepted(Req, State) ->
+	{[
+		{{<<"text">>, <<"html">>, []}, put_function},
+		{{<<"application">>, <<"json">>, []}, put_function},
+		{{<<"text">>, <<"plain">>, []}, put_function}
+	], Req, State}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+get_function(Req, State) ->
+	{<<"">>, Req, State}.
+
+put_function(Req, State) ->
+	Req1 = cowboy_req:reply(200, #{}, <<"Response">>, Req),
+    {stop, Req1, State}.
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.
+```
+### Lager Handler
+```erlang
+%%%-----------------------------------------------------------------------------
+%%% @doc
+%%% Lager Handler.
+%%% @author <USER_NAME>
+%%% @copyright <COPY_WRITE>
+%%% @version 0.0.1
+%%% @end
+%%%-----------------------------------------------------------------------------
+
+-module(<MODULE_NAME>).
+-author(<USER_NAME>).
+-behaviour(gen_event).
+
+-include_lib("lager/include/lager.hrl").
+
+%%%=============================================================================
+%%% Exports and Definitions
+%%%=============================================================================
+
+-define(SERVER, ?MODULE).
+
+%% Websocket Callbacks
+-export([
+    init/1,
+    handle_call/2,
+    handle_event/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
+
+-type lager_msg_metadata() :: [tuple()].
+-type binary_proplist() :: [{binary(), binary()}].
+
+%% Loop state
+-record(state, {
+	level :: integer()
+}).
+-type state() :: state.
+
+%%%=============================================================================
+%%% Behaviour Impl
+%%%=============================================================================
+
+-spec init(list()) -> {ok, state()}.
+init([Level, RetryTimes, RetryInterval, Token]) ->
+    State = #state{
+                    level = lager_util:level_to_num(Level)
+                  },
+    {ok, State}.
+
+-spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
+handle_call(get_loglevel, #state{ level = Level } = State) ->
+    {ok, Level, State};
+handle_call({set_loglevel, Level}, State) ->
+    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
+handle_call(_Request, State) ->
+    {ok, ok, State}.
+   
+-spec handle_event({log, any()}, state()) -> {ok, state()}.
+handle_event({log, Message}, #state{level=Level} = State) ->
+	ok;
+handle_event(_Event, State) ->
+    {ok, State}.
+
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+	?assertEqual(true, true).
+
+-endif.
+```
 ## Snippets
 ### Case
 ```erlang
@@ -494,6 +766,7 @@ PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
 	PoolArgs = [{name, {local, Name}},
 				{worker_module, WorkerImpl}] ++ SizeArgs,
 	poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+end, Pools),
 ```
 ### Cowboy Web Supervisor
 ```erlang
