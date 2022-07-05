@@ -574,7 +574,8 @@ example_test() ->
 %% External API
 -export([
 	start_link/0,
-	stop/0
+	stop/0,
+    example_action/0
 ]).
 
 %% Gen State Machine Callbacks
@@ -605,12 +606,15 @@ start_link() ->
 stop() ->
     gen_statem:stop(?SERVER).	
 
+example_action() ->
+    gen_statem:call(?SERVER, example_action).
+
 %%%=============================================================================
 %%% Gen State Machine Callbacks
 %%%=============================================================================
 
 init([]) ->
-	State = start_state,
+	State = example_state,
 	Data = data, 
 	{ok, State, Data}.
 
@@ -627,12 +631,12 @@ callback_mode() ->
 %%% State transitions
 %%%=============================================================================
 
-example_state({call,From}, action, Data) ->
+example_state({call,From}, example_action, Data) ->
     {next_state, next_example_state, Data, [{reply,From,next_example_state}]};
 example_state(EventType, EventContent, Data) ->
     handle_event(EventType, EventContent, Data).
 
-next_example_state({call,From}, action, Data) ->
+next_example_state({call,From}, example_action, Data) ->
 	{next_state, example_state, Data, [{reply,From,example_state}]};
 next_example_state(EventType, EventContent, Data) ->
 	handle_event(EventType, EventContent, Data).
