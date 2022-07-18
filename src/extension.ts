@@ -15,7 +15,8 @@ export function activate(context: vscode.ExtensionContext) {
 				"Poolboy Specs", 
 				"Cowboy Web Supervisor", 
 				"Worker Child Spec", 
-				"Supervisor Child Spec"
+				"Supervisor Child Spec", 
+				"Record"
 			], "Select the code snippet you wish to generate");
 		};
 	});
@@ -72,21 +73,51 @@ function isFileOk():boolean {
 	return true;
 }
 
+function convertToPrompt(input:string):string {
+	return input
+		.replace(/</g, "Enter ")
+		.replace(/>/g, "")
+		.replace(/_/g, " ")
+		.toLowerCase();
+}
+
+function showBoxForEdits(retTuple:[string, string[]], index:number): Thenable<string> {
+
+	return vscode.window.showInputBox({prompt: convertToPrompt(retTuple[1][index]), placeHolder: retTuple[1][index]}).then(value => {
+		if (value === undefined) {
+			throw new Error('cancelled');
+		}
+		return value;
+	}).then(nextReplaceVal => {
+		var reg = new RegExp(retTuple[1][index], 'g');
+		var updatedTuple:string = retTuple[0].replace(reg, nextReplaceVal);
+		if (index >= retTuple[1].length - 1) {
+			return updatedTuple;
+		} else {
+			return showBoxForEdits([updatedTuple, retTuple[1]], index + 1);
+		}
+	});
+};
+
 function createCodeQuickPickBox(pickableNames:string[], pickableTitle:string) {
 	vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
 		.then(item => {
-
-			if (item !== undefined) {
-				let editor = vscode.window.activeTextEditor;
-				if (editor !== undefined) {
-					if (editor !== undefined) {
-						insertText(editor, 
-							createCodeSnippet(editor, item),
-							editor.selection.start);
-					}
-				}
+			if (item === undefined) {
+				throw new Error('cancelled');
 			}
-
+			return createCodeSnippet2(item);
+		}).then(retTuple => {
+			return showBoxForEdits(retTuple, 0);
+		}).then(retStr => {	
+			let editor = vscode.window.activeTextEditor;
+			if (editor === undefined) {
+				if (editor === undefined) {
+					throw new Error('cancelled');
+				}
+			}		
+			insertText(editor, 
+				retStr,
+				editor.selection.start);
 		});
 }
 
@@ -259,13 +290,13 @@ terminate(_Reason, _Req, _LoopState) ->
 	lager:debug("Websocket connection terminated"),
 	ok.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -351,9 +382,9 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -436,9 +467,9 @@ content_types_accepted(Req, State) ->
 		{{<<"text">>, <<"plain">>, []}, put_function}
 	], Req, State}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
 get_function(Req, State) ->
 	{<<"">>, Req, State}.
@@ -447,9 +478,9 @@ put_function(Req, State) ->
 	Req1 = cowboy_req:reply(200, #{}, <<"Response">>, Req),
     {stop, Req1, State}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -536,13 +567,13 @@ terminate(_Reason, _LoopState) ->
 code_change(_OldVsn, LoopState, _Extra) ->
 	{ok, LoopState}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -653,13 +684,13 @@ handle_event(_, _, Data) ->
     %% Ignore all other events
     {keep_state,Data}.
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -799,9 +830,9 @@ end_per_suite(Config) ->
 example_test(_Config) ->
 	?assertEqual(true, true, <<"Example Comment">>).
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
 `;
 		case "Poolboy Worker":
@@ -884,9 +915,9 @@ code_change(_OldVsn, LoopState, _Extra) ->
 %%% Internal
 %%%=============================================================================
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -923,13 +954,13 @@ example_test() ->
 %%% API
 %%%=============================================================================
 
-%%%===================================================================
+%%%=============================================================================
 %%% Internal functions
-%%%===================================================================
+%%%=============================================================================
 
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -943,29 +974,42 @@ example_test() ->
 	}
 }
 
-function createCodeSnippet(editor:vscode.TextEditor, item:string):string {
+function createCodeSnippet2(item:string):[string, string[]] {
 	switch (item) {
-		case "Case":
-			return `case VAR of
-	_ ->
-		ok
-end,`;
+		case "Record":
+	return [`-record(<RECORD_NAME>, {
+		
+}).
+-type <RECORD_NAME> = <RECORD_NAME>().`, ["<RECORD_NAME>"]];
+;
 		case "Worker Child Spec":
-	return `#{
+	return [`#{
 	id => <ID>,
 	start => {<MODULE>, start_link, []},
 	restart => permanent,
 	shutdown => brutal_kill,
 	type => worker
-}`;
+}`, ["<ID>", "<MODULE>"]];
 		case "Supervisor Child Spec":
-	return `#{
+	return [`#{
 	id => <ID>,
 	start => {<MODULE>, start_link, []},
 	restart => permanent,
 	shutdown => brutal_kill,
 	type => supervisor
-}`;
+}`, ["<ID>", "<MODULE>"]];
+		case "Case":
+	return [`case <CASE_TARGET> of
+	_ ->
+		ok
+end,`, ["<CASE_TARGET>"]];
+		default:
+	return [createCodeSnippet(item), []];
+	}
+};
+
+function createCodeSnippet(item:string):string {
+	switch (item) {
 		case "Cowboy Web Supervisor":
 	return `Dispatch = cowboy_router:compile([
 	{'_', [
@@ -1005,9 +1049,9 @@ PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
 end, Pools),`;
 		default:
 			return `
-%%%===================================================================
+%%%=============================================================================
 %%% Tests
-%%%===================================================================
+%%%=============================================================================
 
 -ifdef(TEST).
 
@@ -1019,4 +1063,4 @@ example_test() ->
 -endif.
 `;
 	}
-}
+};
