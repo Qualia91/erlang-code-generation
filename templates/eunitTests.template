@@ -1,0 +1,10 @@
+<SECTION_COMMENT>{Tests}
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+example_test() ->
+    ?assertEqual(true, true).
+
+-endif.

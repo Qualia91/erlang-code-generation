@@ -2,7 +2,7 @@
 	"name": "erlang-code-generation",
 	"displayName": "erlang-code-generation",
 	"description": "Generates boiler plate erlang code",
-	"version": "0.0.13",
+	"version": "0.0.14",
 	"publisher": "bocdev", 
 	"license": "SEE LICENSE IN LICENSE",
 	"repository": {
@@ -22,6 +22,7 @@
 		"onCommand:erlang-code-generation.module-gen"
 	],
 	"main": "./dist/extension.js",
+	"files": ["./templates/sectionCommentTemplate.txt"],
 	"contributes": {
 		"commands": [
 			{

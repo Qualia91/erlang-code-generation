@@ -1,0 +1,54 @@
+<HEADER>
+
+%% Websocket Callbacks
+-export([
+    init/2,
+    websocket_init/1,
+    websocket_handle/2,
+    websocket_info/2,
+    terminate/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+    ping_interval :: integer()
+}).
+-type loop_state() :: loop_state.
+
+<SECTION_COMMENT>{Lager Handler Callbacks}
+
+-spec init(list()) -> {ok, state()}.
+init([Level, RetryTimes, RetryInterval, Token]) ->
+    State = #state{
+                    level = lager_util:level_to_num(Level)
+                    },
+    {ok, State}.
+
+-spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
+handle_call(get_loglevel, #state{ level = Level } = State) ->
+    {ok, Level, State};
+handle_call({set_loglevel, Level}, State) ->
+    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
+handle_call(_Request, State) ->
+    {ok, ok, State}.
+    
+-spec handle_event({log, any()}, state()) -> {ok, state()}.
+handle_event({log, Message}, #state{level=Level} = State) ->
+    ok;
+handle_event(_Event, State) ->
+    {ok, State}.
+
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+<SECTION_COMMENT>{Internal functions}
+
+<EUNIT_TESTS>

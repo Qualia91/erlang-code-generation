@@ -1,7 +1,12 @@
 import * as vscode from 'vscode';
 import { userInfo } from 'os';
+import * as fs from 'fs';
 
 import * as utils from './../generic/utils';
+
+//=============================================================================
+// External Functions
+//=============================================================================
 
 export function createModuleQuickPickBox(pickableNames:string[], pickableTitle:string) {
     vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
@@ -26,52 +31,25 @@ export function createModuleQuickPickBox(pickableNames:string[], pickableTitle:s
     );
 };
 
-function header(headerTitle:string) : string {
-    return `%%%-----------------------------------------------------------------------------
-%%% @doc
-%%% ${headerTitle}.
-%%% @author <USER_NAME>
-%%% @end
-%%%-----------------------------------------------------------------------------
+//=============================================================================
+// Internal Functions
+//=============================================================================
 
--module(<MODULE_NAME>).
--author("<USER_NAME>").`;
-};
-
-function sectionComment(sectionTitle:string) : string {
-    return `%%%=============================================================================
-%%% ${sectionTitle}
-%%%=============================================================================`;
-};
-
-function eunitTest() : string {
-    return `${sectionComment("Eunit Tests")}
-
--ifdef(TEST).
-
--include_lib("eunit/include/eunit.hrl").
-
-example_test() ->
-    ?assertEqual(true, true).
-
--endif.`;
-};
-
-function moduleTemplate(headerComment:string, exportAndDefs:string, mainBody:string) : string {
+function generateModuleTemplate(headerComment:string, exportAndDefs:string, mainBody:string) : string {
     return `${headerComment}
 
-${sectionComment("Exports and Definitions")}
+${utils.generateSectionComment("Exports and Definitions")}
 
 ${exportAndDefs}
 
 ${mainBody}
 
-${sectionComment("Internal functions")}
+${utils.generateSectionComment("Internal functions")}
 
-${eunitTest()}`;
+${utils.generateEunitTest()}`;
 }
 
-function websocketExportAndDefs() :string {
+function generateWebsocketExportAndDefs() :string {
     return `%% Websocket Callbacks
 -export([
     init/2,
@@ -90,8 +68,8 @@ function websocketExportAndDefs() :string {
 -type loop_state() :: loop_state.`;
 }
 
-function websocketMainBody() :string {
-    return `${sectionComment("Websocket Callbacks")}
+function generateWebsocketMainBody() :string {
+    return `${utils.generateSectionComment("Websocket Callbacks")}
 
 init(Req, [{ping_interval, Interval}]) ->
     {cowboy_websocket, Req, #loop_state{
@@ -121,23 +99,12 @@ terminate(_Reason, _Req, _LoopState) ->
     ok.`;
 }
 
-function createModule(editor:vscode.TextEditor, item:string):string {
-	switch (item) {
-
-		case "Cowboy Websocket Handler":
-            return moduleTemplate(
-                header("Cowboy Websocket Handler"),
-                websocketExportAndDefs(),
-                websocketMainBody()
-            );
-
-		case "Lager Handler":
-	return `${header("Lager Handler")}
--behaviour(gen_event).
+function generateLagerHandlerExportAndDefs() :string {
+    return `-behaviour(gen_event).
 
 -include_lib("lager/include/lager.hrl").
 
-${sectionComment("Exports and Definitions")}
+${utils.generateSectionComment("Exports and Definitions")}
 
 -define(SERVER, ?MODULE).
 
@@ -156,17 +123,19 @@ ${sectionComment("Exports and Definitions")}
 
 %% Loop state
 -record(state, {
-	level :: integer()
+    level :: integer()
 }).
--type state() :: state.
+-type state() :: state.`;
+}
 
-${sectionComment("Behaviour Implementation")}
+function generateLagerHandlerMainBody() :string {
+    return `${utils.generateSectionComment("Lager Handler Callbacks")}
 
 -spec init(list()) -> {ok, state()}.
 init([Level, RetryTimes, RetryInterval, Token]) ->
     State = #state{
                     level = lager_util:level_to_num(Level)
-                  },
+                    },
     {ok, State}.
 
 -spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
@@ -176,10 +145,10 @@ handle_call({set_loglevel, Level}, State) ->
     {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
 handle_call(_Request, State) ->
     {ok, ok, State}.
-   
+    
 -spec handle_event({log, any()}, state()) -> {ok, state()}.
 handle_event({log, Message}, #state{level=Level} = State) ->
-	ok;
+    ok;
 handle_event(_Event, State) ->
     {ok, State}.
 
@@ -190,10 +159,95 @@ terminate(_Reason, _State) ->
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.`;
+}
+
+function generateRestExportAndDefs() :string {
+    return `-behaviour(gen_event).
+
+-include_lib("lager/include/lager.hrl").
+
+${utils.generateSectionComment("Exports and Definitions")}
+
+-define(SERVER, ?MODULE).
+
+%% Websocket Callbacks
+-export([
+    init/1,
+    handle_call/2,
+    handle_event/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3
+]).
+
+-type lager_msg_metadata() :: [tuple()].
+-type binary_proplist() :: [{binary(), binary()}].
+
+%% Loop state
+-record(state, {
+    level :: integer()
+}).
+-type state() :: state.`;
+}
+
+function generateRestHandlerMainBody() :string {
+    return `${utils.generateSectionComment("Lager Handler Callbacks")}
+
+-spec init(list()) -> {ok, state()}.
+init([Level, RetryTimes, RetryInterval, Token]) ->
+    State = #state{
+                    level = lager_util:level_to_num(Level)
+                    },
     {ok, State}.
 
-${eunitTest()}`;
+-spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
+handle_call(get_loglevel, #state{ level = Level } = State) ->
+    {ok, Level, State};
+handle_call({set_loglevel, Level}, State) ->
+    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
+handle_call(_Request, State) ->
+    {ok, ok, State}.
+    
+-spec handle_event({log, any()}, state()) -> {ok, state()}.
+handle_event({log, Message}, #state{level=Level} = State) ->
+    ok;
+handle_event(_Event, State) ->
+    {ok, State}.
 
+handle_info(_Info, State) ->
+    {ok, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.`;
+}
+
+function createModule(editor:vscode.TextEditor, item:string):string {
+	switch (item) {
+
+		case "Cowboy Websocket Handler":
+            return generateModuleTemplate(
+                utils.generateHeader("Cowboy Websocket Handler"),
+                generateWebsocketExportAndDefs(),
+                generateWebsocketMainBody()
+            );
+
+		case "Lager Handler":
+            return generateModuleTemplate(
+                utils.generateHeader("Lager Handler"),
+                generateLagerHandlerExportAndDefs(),
+                generateLagerHandlerMainBody()
+            );
+
+        case "Cowboy REST Handler":
+            return generateModuleTemplate(
+                utils.generateHeader("Cowboy REST Handler"),
+                generateRestExportAndDefs(),
+                generateRestHandlerMainBody()
+            );
 
 		case "Cowboy REST Handler":
 			return `%%%-----------------------------------------------------------------------------
