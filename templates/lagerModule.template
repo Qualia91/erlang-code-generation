@@ -1,4 +1,4 @@
-<HEADER>
+<HEADER>Lager Handler built from template
 
 %% Websocket Callbacks
 -export([

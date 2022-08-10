@@ -35,18 +35,39 @@ export function createModuleQuickPickBox(pickableNames:string[], pickableTitle:s
 // Internal Functions
 //=============================================================================
 
-function generateModuleTemplate(headerComment:string, exportAndDefs:string, mainBody:string) : string {
-    return `${headerComment}
+export function generateEunitTest() : string {
+    var template = fs.readFileSync(__dirname + '/../templates/eunitTests.template','utf8');
+    var commentTemplate = fs.readFileSync(__dirname + '/../templates/sectionComment.template','utf8');
+    var rx = /<SECTION_COMMENT>(.*)?/g;
+    var arr = rx.exec(template);
+    if (arr !== null && arr.length > 0 && arr[1] !== undefined) {
+        commentTemplate = commentTemplate.replace(/<SECTION_TITLE>(.*)?/g, arr[1]);
+    } else {
+        commentTemplate = commentTemplate.replace(/<SECTION_TITLE>(.*)?/g, "Eunit Tests");
+    }
+    return template.replace(/<SECTION_COMMENT>(.*)?/g, commentTemplate);
+};
 
-${utils.generateSectionComment("Exports and Definitions")}
+function generateModuleTemplate(moduleTemplateFileName:string) : string {
+    var moduleTemplate = fs.readFileSync(__dirname + '/../templates/' + moduleTemplateFileName,'utf8');
+    var headerTemplate = fs.readFileSync(__dirname + '/../templates/header.template','utf8');
+    var sectionCommentTemplate = fs.readFileSync(__dirname + '/../templates/sectionComment.template','utf8');
+    var testsTemplate = fs.readFileSync(__dirname + '/../templates/eunitTests.template','utf8');
 
-${exportAndDefs}
+    headerTemplate = replaceInTemplate(headerTemplate,  /<HEADER_TITLE>(.*)?/g, "");
+    sectionCommentTemplate = replaceInTemplate(sectionCommentTemplate,  /<SECTION_COMMENT>(.*)?/g, "");
+    headerTemplate = replaceInTemplate(headerTemplate,  /<HEADER_TITLE>(.*)?/g, "");
 
-${mainBody}
+}
 
-${utils.generateSectionComment("Internal functions")}
-
-${utils.generateEunitTest()}`;
+function replaceInTemplate(template:string, rx:RegExp, defaultReplace:string) {
+    var arr = rx.exec(template);
+    if (arr !== null && arr.length > 0 && arr[1] !== undefined) {
+        template = template.replace(rx, arr[1]);
+    } else {
+        template = template.replace(rx, defaultReplace);
+    }
+    return template;
 }
 
 function generateWebsocketExportAndDefs() :string {
@@ -97,69 +118,6 @@ websocket_info(Info, State) ->
 terminate(_Reason, _Req, _LoopState) ->
     lager:debug("Websocket connection terminated"),
     ok.`;
-}
-
-function generateLagerHandlerExportAndDefs() :string {
-    return `-behaviour(gen_event).
-
--include_lib("lager/include/lager.hrl").
-
-${utils.generateSectionComment("Exports and Definitions")}
-
--define(SERVER, ?MODULE).
-
-%% Websocket Callbacks
--export([
-    init/1,
-    handle_call/2,
-    handle_event/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
-
--type lager_msg_metadata() :: [tuple()].
--type binary_proplist() :: [{binary(), binary()}].
-
-%% Loop state
--record(state, {
-    level :: integer()
-}).
--type state() :: state.`;
-}
-
-function generateLagerHandlerMainBody() :string {
-    return `${utils.generateSectionComment("Lager Handler Callbacks")}
-
--spec init(list()) -> {ok, state()}.
-init([Level, RetryTimes, RetryInterval, Token]) ->
-    State = #state{
-                    level = lager_util:level_to_num(Level)
-                    },
-    {ok, State}.
-
--spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
-handle_call(get_loglevel, #state{ level = Level } = State) ->
-    {ok, Level, State};
-handle_call({set_loglevel, Level}, State) ->
-    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
-handle_call(_Request, State) ->
-    {ok, ok, State}.
-    
--spec handle_event({log, any()}, state()) -> {ok, state()}.
-handle_event({log, Message}, #state{level=Level} = State) ->
-    ok;
-handle_event(_Event, State) ->
-    {ok, State}.
-
-handle_info(_Info, State) ->
-    {ok, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.`;
 }
 
 function generateRestExportAndDefs() :string {
@@ -236,11 +194,7 @@ function createModule(editor:vscode.TextEditor, item:string):string {
             );
 
 		case "Lager Handler":
-            return generateModuleTemplate(
-                utils.generateHeader("Lager Handler"),
-                generateLagerHandlerExportAndDefs(),
-                generateLagerHandlerMainBody()
-            );
+            return generateModuleTemplate("lagerModule.template");
 
         case "Cowboy REST Handler":
             return generateModuleTemplate(
