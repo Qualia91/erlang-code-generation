@@ -35,29 +35,26 @@ export function createModuleQuickPickBox(pickableNames:string[], pickableTitle:s
 // Internal Functions
 //=============================================================================
 
-export function generateEunitTest() : string {
-    var template = fs.readFileSync(__dirname + '/../templates/eunitTests.template','utf8');
-    var commentTemplate = fs.readFileSync(__dirname + '/../templates/sectionComment.template','utf8');
-    var rx = /<SECTION_COMMENT>(.*)?/g;
-    var arr = rx.exec(template);
-    if (arr !== null && arr.length > 0 && arr[1] !== undefined) {
-        commentTemplate = commentTemplate.replace(/<SECTION_TITLE>(.*)?/g, arr[1]);
-    } else {
-        commentTemplate = commentTemplate.replace(/<SECTION_TITLE>(.*)?/g, "Eunit Tests");
-    }
-    return template.replace(/<SECTION_COMMENT>(.*)?/g, commentTemplate);
-};
-
 function generateModuleTemplate(moduleTemplateFileName:string) : string {
     var moduleTemplate = fs.readFileSync(__dirname + '/../templates/' + moduleTemplateFileName,'utf8');
     var headerTemplate = fs.readFileSync(__dirname + '/../templates/header.template','utf8');
     var sectionCommentTemplate = fs.readFileSync(__dirname + '/../templates/sectionComment.template','utf8');
     var testsTemplate = fs.readFileSync(__dirname + '/../templates/eunitTests.template','utf8');
 
-    headerTemplate = replaceInTemplate(headerTemplate,  /<HEADER_TITLE>(.*)?/g, "");
-    sectionCommentTemplate = replaceInTemplate(sectionCommentTemplate,  /<SECTION_COMMENT>(.*)?/g, "");
-    headerTemplate = replaceInTemplate(headerTemplate,  /<HEADER_TITLE>(.*)?/g, "");
+    moduleTemplate = moduleTemplate.replace(/<EUNIT_TESTS>(.*)?/g, testsTemplate);
+    moduleTemplate = replaceStructureInTemplate(/<HEADER>(.*)?/, /<HEADER_TITLE>(.*)?/, moduleTemplate, headerTemplate, "Generated from " + moduleTemplateFileName);
+    moduleTemplate = replaceStructureInTemplate(/<SECTION_COMMENT>(.*)?/, /<SECTION_TITLE>(.*)?/, moduleTemplate, sectionCommentTemplate, "");
 
+    return moduleTemplate;
+}
+
+function replaceStructureInTemplate(structureGetter:RegExp, varInStructureGetter:RegExp, template:string, structureTemplate:string, defaultStructureInput:string) : string {
+    var arr;
+    while (arr = structureGetter.exec(template)) {
+        var updatedStructureTemplate = structureTemplate.replace(varInStructureGetter, arr[1]);
+        template = template.replace(structureGetter, updatedStructureTemplate);
+    }
+    return template;
 }
 
 function replaceInTemplate(template:string, rx:RegExp, defaultReplace:string) {
@@ -70,138 +67,28 @@ function replaceInTemplate(template:string, rx:RegExp, defaultReplace:string) {
     return template;
 }
 
-function generateWebsocketExportAndDefs() :string {
-    return `%% Websocket Callbacks
--export([
-    init/2,
-    websocket_init/1,
-    websocket_handle/2,
-    websocket_info/2,
-    terminate/3
-]).
-
--define(SERVER, ?MODULE).
-
-%% Loop state
--record(loop_state, {
-    ping_interval :: integer()
-}).
--type loop_state() :: loop_state.`;
-}
-
-function generateWebsocketMainBody() :string {
-    return `${utils.generateSectionComment("Websocket Callbacks")}
-
-init(Req, [{ping_interval, Interval}]) ->
-    {cowboy_websocket, Req, #loop_state{
-        ping_interval = Interval
-    }}.
-
-websocket_init(LoopState = #loop_state{ping_interval = Interval}) ->
-    lager:debug("Websocket init, pinging every ~p ms~n", [Interval]),
-    erlang:start_timer(Interval, self(), ping),
-    {reply, {binary, <<"ping">>}, LoopState}.
-
-websocket_handle({_, <<"pong">>}, LoopState = #loop_state{ping_interval = Interval}) ->
-    erlang:start_timer(Interval, self(), ping),
-    {ok, LoopState};
-websocket_handle(Msg, LoopState) ->
-    lager:debug("Unhandled websocket_handle: ~p~n", [Msg]),
-    {ok, LoopState}.
-
-websocket_info({timeout, _Ref, ping}, LoopState) ->
-    {reply, {text, <<"ping">>}, LoopState};
-websocket_info(Info, State) ->
-    lager:debug("Unknown websocket_info: ~p", [Info]),
-    {ok, State}.
-
-terminate(_Reason, _Req, _LoopState) ->
-    lager:debug("Websocket connection terminated"),
-    ok.`;
-}
-
-function generateRestExportAndDefs() :string {
-    return `-behaviour(gen_event).
-
--include_lib("lager/include/lager.hrl").
-
-${utils.generateSectionComment("Exports and Definitions")}
-
--define(SERVER, ?MODULE).
-
-%% Websocket Callbacks
--export([
-    init/1,
-    handle_call/2,
-    handle_event/2,
-    handle_info/2,
-    terminate/2,
-    code_change/3
-]).
-
--type lager_msg_metadata() :: [tuple()].
--type binary_proplist() :: [{binary(), binary()}].
-
-%% Loop state
--record(state, {
-    level :: integer()
-}).
--type state() :: state.`;
-}
-
-function generateRestHandlerMainBody() :string {
-    return `${utils.generateSectionComment("Lager Handler Callbacks")}
-
--spec init(list()) -> {ok, state()}.
-init([Level, RetryTimes, RetryInterval, Token]) ->
-    State = #state{
-                    level = lager_util:level_to_num(Level)
-                    },
-    {ok, State}.
-
--spec handle_call(get_loglevel | set_loglevel, state()) -> {ok, state()}.
-handle_call(get_loglevel, #state{ level = Level } = State) ->
-    {ok, Level, State};
-handle_call({set_loglevel, Level}, State) ->
-    {ok, ok, State#state{ level = lager_util:level_to_num(Level) }};
-handle_call(_Request, State) ->
-    {ok, ok, State}.
-    
--spec handle_event({log, any()}, state()) -> {ok, state()}.
-handle_event({log, Message}, #state{level=Level} = State) ->
-    ok;
-handle_event(_Event, State) ->
-    {ok, State}.
-
-handle_info(_Info, State) ->
-    {ok, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.`;
-}
-
 function createModule(editor:vscode.TextEditor, item:string):string {
 	switch (item) {
 
+		// case "Cowboy Websocket Handler":
+        //     return generateModuleTemplate(
+        //         utils.generateHeader("Cowboy Websocket Handler"),
+        //         generateWebsocketExportAndDefs(),
+        //         generateWebsocketMainBody()
+        //     );
+
 		case "Cowboy Websocket Handler":
-            return generateModuleTemplate(
-                utils.generateHeader("Cowboy Websocket Handler"),
-                generateWebsocketExportAndDefs(),
-                generateWebsocketMainBody()
-            );
+            return generateModuleTemplate("websocketHandlerModule.template");
 
 		case "Lager Handler":
-            return generateModuleTemplate("lagerModule.template");
+            return generateModuleTemplate("lagerHandlerModule.template");
 
-        case "Cowboy REST Handler":
-            return generateModuleTemplate(
-                utils.generateHeader("Cowboy REST Handler"),
-                generateRestExportAndDefs(),
-                generateRestHandlerMainBody()
-            );
+        // case "Cowboy REST Handler":
+        //     return generateModuleTemplate(
+        //         utils.generateHeader("Cowboy REST Handler"),
+        //         generateRestExportAndDefs(),
+        //         generateRestHandlerMainBody()
+        //     );
 
 		case "Cowboy REST Handler":
 			return `%%%-----------------------------------------------------------------------------

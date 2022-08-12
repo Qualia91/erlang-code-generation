@@ -1,0 +1,49 @@
+<HEADER>Websockets Handler
+
+<SECTION_COMMENT>Export and Defs
+
+%% Websocket Callbacks
+-export([
+    init/2,
+    websocket_init/1,
+    websocket_handle/2,
+    websocket_info/2,
+    terminate/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+    ping_interval :: integer()
+}).
+-type loop_state() :: loop_state.
+
+<SECTION_COMMENT>Websocket Handler Callbacks
+
+init(Req, [{ping_interval, Interval}]) ->
+    {cowboy_websocket, Req, #loop_state{
+        ping_interval = Interval
+    }}.
+
+websocket_init(LoopState = #loop_state{ping_interval = Interval}) ->
+    erlang:start_timer(Interval, self(), ping),
+    {reply, {binary, <<"ping">>}, LoopState}.
+
+websocket_handle({_, <<"pong">>}, LoopState = #loop_state{ping_interval = Interval}) ->
+    erlang:start_timer(Interval, self(), ping),
+    {ok, LoopState};
+websocket_handle(Msg, LoopState) ->
+    {ok, LoopState}.
+
+websocket_info({timeout, _Ref, ping}, LoopState) ->
+    {reply, {text, <<"ping">>}, LoopState};
+websocket_info(Info, State) ->
+    {ok, State}.
+
+terminate(_Reason, _Req, _LoopState) ->
+    ok.
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>
