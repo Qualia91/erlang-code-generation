@@ -1,0 +1,179 @@
+{
+	"print to console": {
+		"prefix": "log",
+		"body": [
+			"io:format(\"~p~n\", [$1]);",
+			"$2"
+		],
+		"description": "Log output to console"
+	},
+    "receive": {
+        "prefix": "rec",
+        "body": [
+            "receive",
+            "\t$1 ->",
+            "\t\t$2",
+            "end$3"
+        ],
+        "description": "receive block"
+    },
+    "receive with after": {
+        "prefix": "reca",
+        "body": [
+            "receive",
+            "\t$1 ->",
+            "\t\t$2",
+            "after",
+            "\t$3 ->",
+            "\t\t$4",
+            "end$5"
+        ],
+        "description": "receive block with after"
+    },
+    "case": {
+        "prefix": "case",
+        "body": [
+            "case $1 of",
+            "\t$2 ->",
+            "\t\t$3",
+            "end$4"
+        ],
+        "description": "case block"
+    },
+    "if": {
+        "prefix": "if",
+        "body": [
+            "if",
+            "\t$1 ->",
+            "\t\t$2",
+            "\ttrue ->",
+            "\t\t$3",
+            "end$4"
+        ],
+        "description": "if block"
+    },
+    "Try": {
+        "prefix": "try",
+        "body": [
+            "try $1 of",
+            "\t$2 ->",
+            "\t\t$3",
+            "catch",
+            "\t$4 ->",
+            "\t\t$5",
+            "end$6"
+        ],
+        "description": "try .. catch block"
+    },
+    "inline try/catch": {
+        "prefix": "?",
+        "body": [
+            "try $1 catch $2 -> $4 end$5"
+        ],
+        "description": "inline try .. catch block"
+    },
+    "eunit tests": {
+        "prefix": "eunit",
+        "body": [
+            "-ifdef(TEST).",
+			"-include_lib(\"eunit/include/eunit.hrl\").",
+			"-endif.",
+			"",
+			"%%%===================================================================",
+			"%%% Tests",
+			"%%%===================================================================",
+			"",
+			"-ifdef(TEST).",
+			"",
+			"$1_test() ->",
+			"\t$2.",
+			"",
+			"-endif.",
+			"$3"
+        ],
+        "description": "eunit tests section"
+    },
+    "poolboy specs": {
+        "prefix": "pools",
+        "body": [
+			"{ok, Pools} = application:get_env($1, pools),",
+			"PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->",
+			"\tWorkerImpl = proplists:get_value(worker_impl, WorkerArgs),",
+			"\tPoolArgs = [{name, {local, Name}},",
+			"\t{worker_module, WorkerImpl}] ++ SizeArgs,",
+			"\tpoolboy:child_spec(Name, PoolArgs, WorkerArgs)",
+			"end, Pools),",
+			"$2"
+        ],
+        "description": "poolboy worker specs"
+    },
+    "cowboy web supervisor": {
+        "prefix": "cows",
+        "body": [
+			"Dispatch = cowboy_router:compile([",
+			"\t{'_', [",
+			"\t\t{\"/endpoint\", endpoint, [{stats_interval, 10000}]}",
+			"\t]}",
+			"]),",
+			"{ok, _} = cowboy:start_clear(",
+			"\thttp,",
+			"\t[",
+			"\t\t{port, $1}",
+			"\t],",
+			"\t#{env=>#{dispatch=>Dispatch}}",
+			"),",
+			"$2"
+        ],
+        "description": "cowboy web supervisor"
+    },
+    "worker child specs": {
+        "prefix": "works",
+        "body": [
+			"#{",
+			"\tid => $1,",
+			"\tstart => {$2, start_link, [$3]},",
+			"\trestart => permanent,",
+			"\tshutdown => brutal_kill,",
+			"\ttype => worker",
+			"}",
+			"$4"
+        ],
+        "description": "worker child specs"
+    },
+    "supervisor child specs": {
+        "prefix": "sups",
+        "body": [
+			"#{",
+			"\tid => $1,",
+			"\tstart => {$2, start_link, [$3]},",
+			"\trestart => permanent,",
+			"\tshutdown => brutal_kill,",
+			"\ttype => supervisor",
+			"}",
+			"$4"
+        ],
+        "description": "worker child specs"
+    },
+    "comment: section": {
+        "prefix": "comsec",
+        "body": [
+			"%%%=============================================================================",
+            "%%% $1",
+            "%%%=============================================================================",
+            "$2"
+        ],
+        "description": "comment: section"
+    },
+    "comment: function": {
+        "prefix": "funsec",
+        "body": [
+            "%%------------------------------------------------------------------------------",
+            "%% @doc",
+            "%% $1",
+            "%% @end",
+            "%%------------------------------------------------------------------------------",
+            "$2"
+        ],
+        "description": "comment: function"
+    }
+}

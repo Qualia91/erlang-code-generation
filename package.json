@@ -17,7 +17,6 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:erlang-code-generation.code-gen",
 		"onCommand:erlang-code-generation.comment-gen",
 		"onCommand:erlang-code-generation.module-gen"
 	],
@@ -26,10 +25,6 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "erlang-code-generation.code-gen",
-				"title": "Erlang: Code Gen"
-			},
-			{
 				"command": "erlang-code-generation.comment-gen",
 				"title": "Erlang: Comment Gen"
 			},
@@ -37,7 +32,13 @@
 				"command": "erlang-code-generation.module-gen",
 				"title": "Erlang: Module Gen"
 			}
-		]
+		],
+		"snippets": [
+			{
+			  "language": "erlang",
+			  "path": "./snippets/erlang.json"
+			}
+		  ]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",

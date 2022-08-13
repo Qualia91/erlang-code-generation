@@ -11,7 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
 		if (isFileOk()) {
-			createCodeQuickPickBox([
+			snippetGen.createCodeQuickPickBox([
 				"Case", 
 				"Receive", 
 				"Try/Catch", 
@@ -35,26 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
 		};
 	});
 
-	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
-		if (isFileOk()) {
-			moduleGen.createModuleQuickPickBox([
-				"Gen Server", 
-				"Gen State Machine", 
-				"Supervisor", 
-				"Header", 
-				"Empty", 
-				"CT", 
-				"Poolboy Worker", 
-				"Cowboy Websocket Handler",
-				"Cowboy REST Handler",
-				"Lager Handler"
-			], "Select the module behavior you wish to implement");
-		};
-	});
-
 	context.subscriptions.push(code);
 	context.subscriptions.push(comment);
-	context.subscriptions.push(module);
 }
 
 // this method is called when your extension is deactivated
@@ -76,142 +58,3 @@ function isFileOk():boolean {
 
 	return true;
 }
-
-function convertToPrompt(input:string):string {
-	return input
-		.replace(/</g, "Enter ")
-		.replace(/>/g, "")
-		.replace(/_/g, " ")
-		.toLowerCase();
-}
-
-function showBoxForEdits(retTuple:[string, string[]], index:number): Thenable<string> {
-
-	return vscode.window.showInputBox({prompt: convertToPrompt(retTuple[1][index]), placeHolder: retTuple[1][index]}).then(value => {
-		if (value === undefined) {
-			throw new Error('cancelled');
-		}
-		return value;
-	}).then(nextReplaceVal => {
-		var reg = new RegExp(retTuple[1][index], 'g');
-		var updatedTuple:string = retTuple[0].replace(reg, nextReplaceVal);
-		if (index >= retTuple[1].length - 1) {
-			return updatedTuple;
-		} else {
-			return showBoxForEdits([updatedTuple, retTuple[1]], index + 1);
-		}
-	});
-};
-
-function createCodeQuickPickBox(pickableNames:string[], pickableTitle:string) {
-	vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
-		.then(item => {
-			if (item === undefined) {
-				throw new Error('cancelled');
-			}
-			return createCodeSnippet2(item);
-		}).then(retTuple => {
-			return showBoxForEdits(retTuple, 0);
-		}).then(retStr => {	
-			let editor = vscode.window.activeTextEditor;
-			if (editor === undefined) {
-				if (editor === undefined) {
-					throw new Error('cancelled');
-				}
-			}		
-			utils.insertText(editor, 
-				retStr,
-				editor.selection.start);
-		});
-}
-
-function createCodeSnippet2(item:string):[string, string[]] {
-	switch (item) {
-		case "Record":
-	return [`-record(<RECORD_NAME>, {
-		
-}).
--type <RECORD_NAME> = <RECORD_NAME>().`, ["<RECORD_NAME>"]];
-;
-		case "Worker Child Spec":
-	return [`#{
-	id => <ID>,
-	start => {<MODULE>, start_link, []},
-	restart => permanent,
-	shutdown => brutal_kill,
-	type => worker
-}`, ["<ID>", "<MODULE>"]];
-		case "Supervisor Child Spec":
-	return [`#{
-	id => <ID>,
-	start => {<MODULE>, start_link, []},
-	restart => permanent,
-	shutdown => brutal_kill,
-	type => supervisor
-}`, ["<ID>", "<MODULE>"]];
-		case "Case":
-	return [`case <CASE_TARGET> of
-	_ ->
-		ok
-end,`, ["<CASE_TARGET>"]];
-		default:
-	return [createCodeSnippet(item), []];
-	}
-};
-
-function createCodeSnippet(item:string):string {
-	switch (item) {
-		case "Cowboy Web Supervisor":
-	return `Dispatch = cowboy_router:compile([
-	{'_', [
-		{"/", endpoint, [{ping_interval, 10000}]}
-	]}
-]),
-{ok, _} = cowboy:start_clear(
-	http,
-	[
-		{port, PORT}
-	],
-	#{env=>#{dispatch=>Dispatch}}
-),`;
-		case "Try/Catch":
-	return `try THIS of
-	_ ->
-		ok
-catch
-	ERROR_TYPE:ERROR ->
-		ok
-end,`;
-		case "Receive":
-	return `receive
-	Case ->
-		ok
-after
-	Timeout ->
-		ok
-end,`;
-		case "Poolboy Specs":
-			return `{ok, Pools} = application:get_env(<APPLICATION_NAME>, pools),
-PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
-	WorkerImpl = proplists:get_value(worker_impl, WorkerArgs),
-	PoolArgs = [{name, {local, Name}},
-				{worker_module, WorkerImpl}] ++ SizeArgs,
-	poolboy:child_spec(Name, PoolArgs, WorkerArgs)
-end, Pools),`;
-		default:
-			return `
-%%%=============================================================================
-%%% Tests
-%%%=============================================================================
-
--ifdef(TEST).
-
--include_lib("eunit/include/eunit.hrl").
-
-example_test() ->
-    ?assertEqual(true, true).
-
--endif.
-`;
-	}
-};
