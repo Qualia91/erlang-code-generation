@@ -1,11 +1,23 @@
 import { userInfo } from 'os';
 import * as vscode from 'vscode';
 
+import * as edp from './erlang-data-provider'
+
 import * as moduleGen from './generators/moduleGen';
 import * as commentGen from './generators/commentGen';
 import * as utils from './generic/utils';
 
 export function activate(context: vscode.ExtensionContext) {
+	const rootPath =
+		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+		? vscode.workspace.workspaceFolders[0].uri.fsPath
+		: undefined;
+	if (rootPath !== undefined) {
+		vscode.window.registerTreeDataProvider("erlang-project-outline", new edp.ErlangDataProvider(rootPath));
+		// vscode.commands.registerCommand("exampleTreeView.selectNode", (item:vscode.TreeItem) => {
+		// 	console.log(item.label);
+		// });
+	}
 	
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 

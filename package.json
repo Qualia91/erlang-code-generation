@@ -18,7 +18,8 @@
 	],
 	"activationEvents": [
 		"onCommand:erlang-code-generation.comment-gen",
-		"onCommand:erlang-code-generation.module-gen"
+		"onCommand:erlang-code-generation.module-gen",
+		"onView:erlang-project-outline"
 	],
 	"main": "./dist/extension.js",
 	"files": ["./templates/sectionCommentTemplate.txt"],
@@ -38,7 +39,28 @@
 			  "language": "erlang",
 			  "path": "./snippets/erlang.json"
 			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+			  {
+				"id": "erlang-code-generation-project-explorer",
+				"title": "Erlang Project Explorer",
+				"icon": "images/erlang-icon.svg"
+			  }
+			]
+		},
+		"views": {
+		  "erlang-code-generation-project-explorer": [
+			{
+			  "id": "package-dependencies",
+			  "name": "Dependencies"
+			},
+			{
+			  "id": "erlang-project-outline",
+			  "name": "Outline"
+			}
 		  ]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
