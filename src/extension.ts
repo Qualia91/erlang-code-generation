@@ -9,22 +9,6 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 
-	let code = vscode.commands.registerCommand('erlang-code-generation.code-gen', () => {
-		if (isFileOk()) {
-			snippetGen.createCodeQuickPickBox([
-				"Case", 
-				"Receive", 
-				"Try/Catch", 
-				"Eunit", 
-				"Poolboy Specs", 
-				"Cowboy Web Supervisor", 
-				"Worker Child Spec", 
-				"Supervisor Child Spec", 
-				"Record"
-			], "Select the code snippet you wish to generate");
-		};
-	});
-
 	let comment = vscode.commands.registerCommand('erlang-code-generation.comment-gen', () => {
 		if (isFileOk()) {
 			commentGen.createCommentQuickPickBox([
@@ -35,8 +19,23 @@ export function activate(context: vscode.ExtensionContext) {
 		};
 	});
 
-	context.subscriptions.push(code);
+	let module = vscode.commands.registerCommand('erlang-code-generation.module-gen', () => {
+		moduleGen.createModuleQuickPickBox([
+			"Gen Server", 
+			"Gen State Machine", 
+			"Supervisor", 
+			"Header", 
+			"Empty", 
+			"CT", 
+			"Poolboy Worker", 
+			"Cowboy Websocket Handler",
+			"Cowboy REST Handler",
+			"Lager Handler"
+		], "Select the module behavior you wish to implement");
+	});
+
 	context.subscriptions.push(comment);
+	context.subscriptions.push(module);
 }
 
 // this method is called when your extension is deactivated
