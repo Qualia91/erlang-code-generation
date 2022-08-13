@@ -11,22 +11,19 @@ import * as utils from './../generic/utils';
 export function createModuleQuickPickBox(pickableNames:string[], pickableTitle:string) {
     vscode.window.showQuickPick(pickableNames, {canPickMany: false, placeHolder: pickableTitle})
         .then(item => {
-
             if (item !== undefined) {
                 let editor = vscode.window.activeTextEditor;
                 if (editor !== undefined) {
                     if (editor !== undefined) {
-                        var fileNameSplit = editor.document.fileName.replace(".erl", "").replace(".hrl", "").split("\\");
-                        var fileName = fileNameSplit[fileNameSplit.length - 1];
+                        var filename = utils.getFilename(editor);
                         utils.insertText(editor, 
                             createModule(editor, item)
-                                .replace(/<MODULE_NAME>/g, fileName)
+                                .replace(/<MODULE_NAME>/g, filename)
                                 .replace(/<USER_NAME>/g, userInfo().username),
                             editor.selection.start);
                     }
                 }
             }
-
         }
     );
 };
@@ -43,30 +40,11 @@ function generateModuleTemplate(moduleTemplateFileName:string) : string {
     var testsTemplate = fs.readFileSync(__dirname + '/../templates/snippets/eunitTests.template','utf8');
 
     moduleTemplate = moduleTemplate.replace(/<EUNIT_TESTS>(.*)?/g, testsTemplate);
-    moduleTemplate = replaceStructureInTemplate(/<HEADER>(.*)?/, /<HEADER_TITLE>(.*)?/, moduleTemplate, headerTemplate, "Generated from " + moduleTemplateFileName);
-    moduleTemplate = replaceStructureInTemplate(/<SECTION_COMMENT>(.*)?/, /<SECTION_TITLE>(.*)?/, moduleTemplate, sectionCommentTemplate, "");
-    moduleTemplate = replaceStructureInTemplate(/<FUNCTION_COMMENT>(.*)?/, /<FUNCTION_COMMENT_TITLE>(.*)?/, moduleTemplate, functionCommentTemplate, "");
+    moduleTemplate = utils.replaceStructureInTemplate(/<HEADER>(.*)?/, /<HEADER_TITLE>(.*)?/, moduleTemplate, headerTemplate, "Generated from " + moduleTemplateFileName);
+    moduleTemplate = utils.replaceStructureInTemplate(/<SECTION_COMMENT>(.*)?/, /<SECTION_TITLE>(.*)?/, moduleTemplate, sectionCommentTemplate, "");
+    moduleTemplate = utils.replaceStructureInTemplate(/<FUNCTION_COMMENT>(.*)?/, /<FUNCTION_COMMENT_TITLE>(.*)?/, moduleTemplate, functionCommentTemplate, "");
 
     return moduleTemplate;
-}
-
-function replaceStructureInTemplate(structureGetter:RegExp, varInStructureGetter:RegExp, template:string, structureTemplate:string, defaultStructureInput:string) : string {
-    var arr;
-    while (arr = structureGetter.exec(template)) {
-        var updatedStructureTemplate = structureTemplate.replace(varInStructureGetter, arr[1]);
-        template = template.replace(structureGetter, updatedStructureTemplate);
-    }
-    return template;
-}
-
-function replaceInTemplate(template:string, rx:RegExp, defaultReplace:string) {
-    var arr = rx.exec(template);
-    if (arr !== null && arr.length > 0 && arr[1] !== undefined) {
-        template = template.replace(rx, arr[1]);
-    } else {
-        template = template.replace(rx, defaultReplace);
-    }
-    return template;
 }
 
 function createModule(editor:vscode.TextEditor, item:string):string {

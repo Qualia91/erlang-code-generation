@@ -2,6 +2,7 @@ import { userInfo } from 'os';
 import * as vscode from 'vscode';
 
 import * as moduleGen from './generators/moduleGen';
+import * as commentGen from './generators/commentGen';
 import * as utils from './generic/utils';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -26,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let comment = vscode.commands.registerCommand('erlang-code-generation.comment-gen', () => {
 		if (isFileOk()) {
-			createCommentQuickPickBox([
+			commentGen.createCommentQuickPickBox([
 				"Header", 
 				"Section", 
 				"Function"
@@ -122,81 +123,6 @@ function createCodeQuickPickBox(pickableNames:string[], pickableTitle:string) {
 				retStr,
 				editor.selection.start);
 		});
-}
-
-function createCommentQuickPickBox(pickableNames:string[], pickableTitle:string) {
-	vscode.window.showQuickPick(pickableNames, {canPickMany: true, placeHolder: pickableTitle})
-		.then(items => {
-
-			if (items !== undefined) {
-				items.reverse().forEach(item => {
-					let editor = vscode.window.activeTextEditor;
-					if (editor !== undefined) {
-						var fileNameSplit = editor.document.fileName.replace(".erl", "").replace(".hrl", "").split("\\");
-						var fileName = fileNameSplit[fileNameSplit.length - 1];
-						var commentPositions = getCommentPositions(editor, item);
-						commentPositions.forEach(position => {
-							if (editor !== undefined) {
-								utils.insertText(editor, 
-									createComment(editor, item)
-									.replace(/<MODULE_NAME>/g, fileName)
-									.replace(/<USER_NAME>/g, userInfo().username),
-								position);
-							}
-						});
-					}
-				});
-			}
-
-		});
-}
-
-function createComment(editor:vscode.TextEditor, item:string):string {
-	switch (item) {
-		case "Header":
-			return `
-%%%-----------------------------------------------------------------------------
-%%% @doc <MODULE_COMMENT_TITLE>
-%%%
-%%% <MODULE_COMMENT>
-%%%
-%%% @author <USER_NAME>
-%%% @copyright <COPY_WRITE>
-%%% @version 0.0.1
-%%% @end
-%%%-----------------------------------------------------------------------------
-`;
-		case "Section":
-			return `
-%%%=============================================================================
-%%% <SECTION_TITLE>
-%%%=============================================================================
-`;
-		case "Function":
-			return `
-%%------------------------------------------------------------------------------
-%% @doc
-%% @end
-%%------------------------------------------------------------------------------
-`;
-		default:
-			console.log("No such comment!");
-			return "";
-	}
-}
-
-function getCommentPositions(editor:vscode.TextEditor, item:string):vscode.Position[] {
-	switch (item) {
-		case "Header":
-			return [editor.selection.start];
-		case "Section":
-			return [editor.selection.start];
-		case "Function":
-			return [editor.selection.start];
-		default:
-			console.log("No such comment!");
-			return [];
-	}
 }
 
 function createCodeSnippet2(item:string):[string, string[]] {
