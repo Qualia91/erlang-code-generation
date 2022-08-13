@@ -1,0 +1,21 @@
+#!/opt/homebrew/opt/erlang@24/bin/escript
+%% -*- erlang -*-
+
+<SECTION_COMMENT>EScript Functions
+
+main(Inputs) ->
+    try
+        io:format("Inputs: ~p\n", [Inputs])
+    catch
+        Error:Reason ->
+            io:format("Error: ~p, Reason: ~p\n", [Error, Reason]),
+            usage()
+    end;
+main(_) ->
+    usage().
+
+usage() ->
+    io:format("usage: <MODULE_NAME> <INPUT>\n"),
+    halt(1).
+
+<SECTION_COMMENT>Internal Functions

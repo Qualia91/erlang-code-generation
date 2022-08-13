@@ -30,7 +30,8 @@ export function activate(context: vscode.ExtensionContext) {
 			"Poolboy Worker", 
 			"Cowboy Websocket Handler",
 			"Cowboy REST Handler",
-			"Lager Handler"
+			"Lager Handler",
+			"EScript"
 		], "Select the module behavior you wish to implement");
 	});
 
@@ -50,8 +51,8 @@ function isFileOk():boolean {
 	}
 
 	// check we have an erlang file open
-	if (!(editor.document.fileName.endsWith(".erl") || editor.document.fileName.endsWith(".hrl"))) {
-		vscode.window.showErrorMessage("File ".concat(editor.document.fileName).concat(" is not an erlang (.erl or .hrl) file"));
+	if (!(editor.document.fileName.endsWith(".erl") || editor.document.fileName.endsWith(".hrl") || editor.document.fileName.endsWith(".escript"))) {
+		vscode.window.showErrorMessage("File ".concat(editor.document.fileName).concat(" is not an erlang (.erl, .hrl or .escript) file"));
 		return false;
 	}
 
