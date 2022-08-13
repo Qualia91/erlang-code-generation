@@ -4,7 +4,7 @@
 	"description": "Generates boiler plate erlang code",
 	"version": "0.0.14",
 	"publisher": "bocdev", 
-	"license": "SEE LICENSE IN LICENSE",
+	"license": "LICENSE.md",
 	"repository": {
 		"type": "git",
 		"directory": "https://github.com/Qualia91/erlang-code-generation.git"
