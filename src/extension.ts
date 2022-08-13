@@ -1,13 +1,16 @@
 import { userInfo } from 'os';
 import * as vscode from 'vscode';
 
+import * as docsGen from './generators/docsGen';
+
 import * as moduleGen from './generators/moduleGen';
 import * as commentGen from './generators/commentGen';
 import * as utils from './generic/utils';
 
 export function activate(context: vscode.ExtensionContext) {
 
-	docsGen.generateDocs();
+	// Turned on in dev to generate docs
+	// docsGen.generateDocs();
 	
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 

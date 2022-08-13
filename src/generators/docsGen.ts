@@ -2,11 +2,7 @@ import * as vscode from 'vscode';
 import { userInfo } from 'os';
 import * as fs from 'fs';
 
-import * as utils from './../generic/utils';
 import * as moduleGen from './moduleGen';
-
-type Pair<T,K> = [T,K];
-type Pairs<T,K> = Pair<T,K>[];
 
 //=============================================================================
 // External Functions
@@ -18,14 +14,17 @@ export function generateDocs() {
 
     var [commentContents, commentCode] =  generateCommentsReadmeSections();
     var [moduleContents, moduleCode] =  generateModuleReadmeSections();
+    var [snippetContents, snippetCode] =  generateSnippetsReadmeSections();
 
     docsTemplate = docsTemplate
         .replace(/<COMMENTS_CONTENTS>/g, commentContents)
         .replace(/<COMMENTS_DOCS>/g, commentCode)
         .replace(/<MODULE_CONTENTS>/g, moduleContents)
-        .replace(/<MODULE_DOCS>/g, moduleCode);
+        .replace(/<MODULE_DOCS>/g, moduleCode)
+        .replace(/<SNIPPETS_CONTENTS>/g, snippetContents)
+        .replace(/<SNIPPETS_DOCS>/g, snippetCode);
 
-    fs.writeFile(__dirname + '/../test.md', docsTemplate,  function(err) {
+    fs.writeFile(__dirname + '/../README.md', docsTemplate,  function(err) {
         if (err) {
             return console.error(err);
         }
@@ -55,7 +54,7 @@ function generateCommentsReadmeSections() : string[] {
     var contents = `- [Comments](#comments)
     - [Header](#header)
     - [Section](#section)
-    - [Function](#function)`;
+    - [Function](#function)\n`;
 
     var code = headerCodeTemplate + '\n' + sectionCodeTemplate + '\n' + functionCodeTemplate;
 
@@ -88,6 +87,29 @@ function generateModuleReadmeSections() : string[] {
             .replace(/<CODE>/g, moduleGen.generateModuleTemplate(File));
         code = code + updatedTemplate + '\n';
     }
+
+    return [contents, code];
+}
+
+function generateSnippetsReadmeSections() : string[] {
+
+    var codeTemplate = fs.readFileSync(__dirname + '/../templates/docs/snippet.template','utf8');
+    var jsonSnippetsFile = fs.readFileSync(__dirname + '/../snippets/erlang.json','utf8');
+    var snippetsJson = JSON.parse(jsonSnippetsFile);
+
+    var contents = "- [Snippets](#snippets)\n";
+    var code = "";
+    for (var key in snippetsJson) {
+        if (snippetsJson.hasOwnProperty(key)) {
+            contents = contents + '\t- [' + key + ": " + snippetsJson[key]["prefix"] + '](#' + key.toLowerCase().replace(/ /g, "-") + ')\n';
+            var updatedTemplate = codeTemplate
+                .replace(/<NAME>/g, key)
+                .replace(/<DESCRIPTION>/g, snippetsJson[key]["description"])
+                .replace(/<PREFIX>/g, snippetsJson[key]["prefix"])
+                .replace(/<CODE>/g, snippetsJson[key]["body"].join('\r\n'));
+            code = code + updatedTemplate + '\n';
+        }
+    };
 
     return [contents, code];
 }
