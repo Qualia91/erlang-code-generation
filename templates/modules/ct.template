@@ -1,0 +1,44 @@
+<HEADER>Common Tests built from template.
+
+-include_lib("common_test/include/ct.hrl").
+-include_lib("stdlib/include/assert.hrl").
+
+<SECTION_COMMENT>Export and Defs
+
+-define(SERVER, ?MODULE).
+
+-export([
+	all/0, 
+	init_per_suite/1, 
+	init_per_testcase/2, 
+	end_per_testcase/2, 
+	end_per_suite/1
+]).
+
+-export([
+    example_test/1
+]).
+
+<SECTION_COMMENT>CT Functions
+
+all() -> 
+    [example_test].
+
+init_per_suite(Config) ->
+    Config.
+
+init_per_testcase(_TestName, Config) ->
+    Config.
+ 
+end_per_testcase(_TestName, Config) ->
+    Config.
+
+end_per_suite(Config) ->
+    Config.
+
+<SECTION_COMMENT>Tests
+
+example_test(_Config) ->
+	?assertEqual(true, true, <<"Example Comment">>).
+
+<SECTION_COMMENT>Internal functions

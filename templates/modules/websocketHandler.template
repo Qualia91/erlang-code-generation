@@ -1,4 +1,4 @@
-<HEADER>Websockets Handler
+<HEADER>Websockets Handler made from template
 
 <SECTION_COMMENT>Export and Defs
 
@@ -33,12 +33,12 @@ websocket_init(LoopState = #loop_state{ping_interval = Interval}) ->
 websocket_handle({_, <<"pong">>}, LoopState = #loop_state{ping_interval = Interval}) ->
     erlang:start_timer(Interval, self(), ping),
     {ok, LoopState};
-websocket_handle(Msg, LoopState) ->
+websocket_handle(_Msg, LoopState) ->
     {ok, LoopState}.
 
 websocket_info({timeout, _Ref, ping}, LoopState) ->
     {reply, {text, <<"ping">>}, LoopState};
-websocket_info(Info, State) ->
+websocket_info(_Info, State) ->
     {ok, State}.
 
 terminate(_Reason, _Req, _LoopState) ->

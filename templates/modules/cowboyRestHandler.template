@@ -1,0 +1,65 @@
+<HEADER>Cowboy Rest Handler built from template.
+
+<SECTION_COMMENT>Export and Defs
+
+%% Websocket Callbacks
+-export([
+    init/2,
+	allowed_methods/2,
+    content_types_provided/2,
+    content_types_accepted/2
+]).
+
+%% Websocket Handlers
+-export([
+    get_function/2,
+	put_function/2
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	
+}).
+-type loop_state() :: loop_state.
+
+<SECTION_COMMENT>Cowboy Rest Handler Callbacks
+
+init(Req, Opts) ->
+	{cowboy_rest, Req, Opts}.
+
+<FUNCTION_COMMENT>REST methods supported by handler.
+allowed_methods(Req, State) ->
+	{[<<"GET">>, <<"POST">>, <<"OPTIONS">>], Req, State}.
+
+<FUNCTION_COMMENT>Define handler functions for GET and HEAD calls, with parameters if needed.
+content_types_provided(Req, State) ->
+	{[
+		{{<<"text">>, <<"html">>, []}, get_function},
+		{{<<"application">>, <<"json">>, []}, get_function},
+		{{<<"text">>, <<"plain">>, []}, get_function}
+	], Req, State}.
+
+
+
+<FUNCTION_COMMENT>Define handler functions for PUT?POST type calls, with parameters if needed.
+content_types_accepted(Req, State) ->
+	{[
+		{{<<"text">>, <<"html">>, []}, put_function},
+		{{<<"application">>, <<"json">>, []}, put_function},
+		{{<<"text">>, <<"plain">>, []}, put_function}
+	], Req, State}.
+
+<SECTION_COMMENT>Handlers
+
+get_function(Req, State) ->
+	{<<"">>, Req, State}.
+
+put_function(Req, State) ->
+	Req1 = cowboy_req:reply(200, #{}, <<"Response">>, Req),
+    {stop, Req1, State}.
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>

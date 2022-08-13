@@ -1,0 +1,33 @@
+<HEADER>Supervisor built from template.
+-behaviour(supervisor).
+
+<SECTION_COMMENT>Export and Defs
+
+%% External API
+-export([
+	start_link/0
+]).
+
+%% Callbacks
+-export([init/1]).
+
+-define(SERVER, ?MODULE).
+
+<SECTION_COMMENT>API
+
+-spec start_link() -> supervisor:startlink_ret().
+start_link() ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+<SECTION_COMMENT> Callbacks
+
+init([]) ->
+    SupFlags = #{strategy => one_for_all,
+                 intensity => 0,
+                 period => 1},
+    ChildSpecs = [],
+    {ok, {SupFlags, ChildSpecs}}.
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>

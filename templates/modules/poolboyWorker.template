@@ -1,0 +1,57 @@
+<HEADER>Poolboy Worker built from template.
+-behaviour(poolboy_worker).
+
+<SECTION_COMMENT>Export and Defs
+
+%% External API
+-export([start_link/1]).
+
+%% Callbacks
+-export([
+	init/1, 
+	handle_call/3, 
+	handle_cast/2, 
+	handle_info/2,
+	terminate/2, 
+	code_change/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	
+}).
+-type loop_state() :: loop_state.
+
+<SECTION_COMMENT>API
+
+-spec start_link(map()) -> {ok, pid()} | {error, {already_started, pid()}} | {error, Reason::any()}.
+start_link(Args) ->
+	gen_server:start_link(?MODULE, Args, []).
+
+<SECTION_COMMENT>Callbacks
+
+init(_Args) ->
+	process_flag(trap_exit, true),
+	{ok, #loop_state{}}.
+
+handle_call(_Request, _From, LoopState) ->
+	Reply = ok,
+	{reply, Reply, LoopState}.
+
+handle_cast(_Msg, LoopState) ->
+	{noreply, LoopState}.
+
+handle_info(_Info, LoopState) ->
+	{noreply, LoopState}.
+
+terminate(_Reason, _LoopState) ->
+	ok.
+
+code_change(_OldVsn, LoopState, _Extra) ->
+	{ok, LoopState}.
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>

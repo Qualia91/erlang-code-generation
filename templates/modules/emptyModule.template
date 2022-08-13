@@ -1,0 +1,22 @@
+<HEADER>Empty Module built from template.
+
+<SECTION_COMMENT>Export and Defs
+
+%% External API
+-export([
+
+]).
+
+-define(SERVER, ?MODULE).
+
+%% example record
+-record(example_record, {
+
+}).
+-type example_record() :: example_record.
+
+<SECTION_COMMENT>API
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>

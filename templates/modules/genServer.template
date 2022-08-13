@@ -1,0 +1,57 @@
+<HEADER>Gen Server built from template.
+-behaviour(gen_server).
+
+<SECTION_COMMENT>Export and Defs
+
+%% External API
+-export([start_link/0]).
+
+%% Callbacks
+-export([
+	init/1, 
+	handle_call/3, 
+	handle_cast/2, 
+	handle_info/2,
+	terminate/2, 
+	code_change/3
+]).
+
+-define(SERVER, ?MODULE).
+
+%% Loop state
+-record(loop_state, {
+	
+}).
+-type loop_state() :: loop_state.
+
+<SECTION_COMMENT>API
+
+-spec start_link() -> {ok, pid()} | {error, {already_started, pid()}} | {error, Reason::any()}.
+start_link() ->
+	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+<SECTION_COMMENT>Gen Server Callbacks
+
+init([]) ->
+	LoopState = #loop_state{}, 
+	{ok, LoopState}.
+
+handle_call(_Request, _From, LoopState) ->
+	Reply = ok,
+	{reply, Reply, LoopState}.
+
+handle_cast(_Msg, LoopState) ->
+	{noreply, LoopState}.
+
+handle_info(_Info, LoopState) ->
+	{noreply, LoopState}.
+
+terminate(_Reason, _LoopState) ->
+	ok.
+
+code_change(_OldVsn, LoopState, _Extra) ->
+	{ok, LoopState}.
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>

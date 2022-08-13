@@ -1,0 +1,82 @@
+<HEADER>Gen State Machine built from template.
+-behaviour(gen_statem).
+
+<SECTION_COMMENT>Export and Defs
+
+-define(SERVER, ?MODULE).
+
+%% External API
+-export([
+	start_link/0,
+	stop/0,
+    example_action/0
+]).
+
+%% Gen State Machine Callbacks
+-export([
+	init/1,
+	code_change/4,
+	callback_mode/0,
+	terminate/3
+]).
+
+%% State transitions
+-export([
+	example_state/3,
+	next_example_state/3,
+	handle_event/3
+]).
+
+<SECTION_COMMENT>API
+
+-spec start_link() -> {ok, pid()} | {error, {already_started, pid()}} | {error, Reason::any()}.
+start_link() ->
+	gen_statem:start({local, ?SERVER}, ?MODULE, [], []).
+
+-spec stop() -> ok;
+stop() ->
+    gen_statem:stop(?SERVER).	
+
+-spec example_action() -> term();
+example_action() ->
+    gen_statem:call(?SERVER, example_action).
+
+<SECTION_COMMENT>Gen State Machine Callbacks
+
+init([]) ->
+	State = example_state,
+	Data = data, 
+	{ok, State, Data}.
+
+terminate(_Reason, _State, _Data) ->
+    void.
+
+code_change(_Vsn, State, Data, _Extra) ->
+    {ok,State,Data}.
+	
+callback_mode() -> 
+	state_functions.
+
+<SECTION_COMMENT>State transitions
+
+example_state({call,From}, example_action, Data) ->
+    {next_state, next_example_state, Data, [{reply,From,next_example_state}]};
+example_state(EventType, EventContent, Data) ->
+    handle_event(EventType, EventContent, Data).
+
+next_example_state({call,From}, example_action, Data) ->
+	{next_state, example_state, Data, [{reply,From,example_state}]};
+next_example_state(EventType, EventContent, Data) ->
+	handle_event(EventType, EventContent, Data).
+
+<FUNCTION_COMMENT>Handle events common to all states.
+handle_event({call,From}, get_count, Data) ->
+    %% Reply with the current count
+    {keep_state,Data,[{reply,From,Data}]};
+handle_event(_, _, Data) ->
+    %% Ignore all other events
+    {keep_state,Data}.
+
+<SECTION_COMMENT>Internal functions
+
+<EUNIT_TESTS>
