@@ -77,6 +77,9 @@ function createModule(editor:vscode.TextEditor, item:string):string {
 		case "Poolboy Worker":
 			return generateModuleTemplate("poolboyWorker.template");
 
+        case "EScript":
+            return generateModuleTemplate("escript.template");
+
 		default:
 			return generateModuleTemplate("emptyModule.template");
 	}
