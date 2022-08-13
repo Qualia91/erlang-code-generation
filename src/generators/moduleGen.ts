@@ -28,11 +28,7 @@ export function createModuleQuickPickBox(pickableNames:string[], pickableTitle:s
     );
 };
 
-//=============================================================================
-// Internal Functions
-//=============================================================================
-
-function generateModuleTemplate(moduleTemplateFileName:string) : string {
+export function generateModuleTemplate(moduleTemplateFileName:string) : string {
     var moduleTemplate = fs.readFileSync(__dirname + '/../templates/modules/' + moduleTemplateFileName,'utf8');
     var headerTemplate = fs.readFileSync(__dirname + '/../templates/snippets/header.template','utf8');
     var sectionCommentTemplate = fs.readFileSync(__dirname + '/../templates/snippets/sectionComment.template','utf8');
@@ -46,6 +42,10 @@ function generateModuleTemplate(moduleTemplateFileName:string) : string {
 
     return moduleTemplate;
 }
+
+//=============================================================================
+// Internal Functions
+//=============================================================================
 
 function createModule(editor:vscode.TextEditor, item:string):string {
 	switch (item) {

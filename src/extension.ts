@@ -6,6 +6,8 @@ import * as commentGen from './generators/commentGen';
 import * as utils from './generic/utils';
 
 export function activate(context: vscode.ExtensionContext) {
+
+	docsGen.generateDocs();
 	
 	console.log('Congratulations, your extension "erlang-code-generation" is now active!');
 

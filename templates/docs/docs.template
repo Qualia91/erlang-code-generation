@@ -1,0 +1,19 @@
+# erlang-code-generation
+
+Download here: https://marketplace.visualstudio.com/items?itemName=bocdev.erlang-code-generation
+
+This is an Extension for Visual Studio Code to generate some boilerplate code for you Erlang projects. Its currently under development. Feel free to create pull requests for anything you think would be useful!
+
+# Features
+
+Currently Supported Generation:
+<COMMENTS_CONTENTS>
+<MODULE_CONTENTS>
+<SNIPPETS_CONTENTS>
+
+# Docs
+## Comments
+<COMMENTS_DOCS>
+## Modules
+<MODULE_DOCS>
+<SNIPPETS_DOCS>
