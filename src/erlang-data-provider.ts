@@ -18,19 +18,19 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
 
     if (element) {
       return Promise.resolve(
-        this.readFilesInApp(
+        this.readFilesInFolder(
           path.join(this.workspaceRoot, element.fileName)
         )
       );
     } else {
-      return Promise.resolve(this.readFilesInApp(this.workspaceRoot));
+      return Promise.resolve(this.readFilesInFolder(this.workspaceRoot));
     }
   }
 
   /**
    * Given the path to package.json, read all its dependencies and devDependencies.
    */
-  private readFilesInApp(solutionPath: string): ModuleInfo[] {
+  private readFilesInFolder(solutionPath: string): ModuleInfo[] {
     if (this.pathExists(solutionPath)) {
 
         let deps: ModuleInfo[] = [];
@@ -38,9 +38,10 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
         fileNames.forEach(file => {
             var stat = fs.lstatSync(path.join(solutionPath, file));
             if (stat.isFile()) {
-                deps.push(new ModuleInfo(file, "File", vscode.TreeItemCollapsibleState.None));
+                deps.push(new ModuleInfo(file, "File", vscode.TreeItemCollapsibleState.Collapsed));
             } else if (stat.isDirectory()) {
-                deps.push(new ModuleInfo(file, "Directory", vscode.TreeItemCollapsibleState.Collapsed));
+                var items = this.readFilesInFolder(path.join(solutionPath, file));
+                deps = deps.concat(items);
             }
         });
 
