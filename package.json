@@ -19,36 +19,18 @@
 	"activationEvents": [
 		"onCommand:erlang-code-generation.comment-gen",
 		"onCommand:erlang-code-generation.module-gen",
-		"onView:erlang-project-outline"
+		"onView:erlang-project-outline",
+		"onCommand:erlang-project-outline.refreshEntry"
 	],
 	"main": "./dist/extension.js",
 	"files": ["./templates/sectionCommentTemplate.txt"],
 	"contributes": {
-		"commands": [
-			{
-				"command": "erlang-code-generation.comment-gen",
-				"title": "Erlang: Comment Gen"
-			},
-			{
-				"command": "erlang-code-generation.module-gen",
-				"title": "Erlang: Module Gen"
-			}
-		],
 		"snippets": [
 			{
 			  "language": "erlang",
 			  "path": "./snippets/erlang.json"
 			}
 		],
-		"viewsContainers": {
-			"activitybar": [
-			  {
-				"id": "erlang-code-generation-project-explorer",
-				"title": "Erlang Project Explorer",
-				"icon": "images/erlang-icon.svg"
-			  }
-			]
-		},
 		"views": {
 		  "erlang-code-generation-project-explorer": [
 			{
@@ -57,9 +39,45 @@
 			},
 			{
 			  "id": "erlang-project-outline",
-			  "name": "Outline"
+			  "name": "Project Outline"
 			}
 		  ]
+		},
+		"commands": [
+			{
+				"command": "erlang-code-generation.comment-gen",
+				"title": "Erlang: Comment Gen"
+			},
+			{
+				"command": "erlang-code-generation.module-gen",
+				"title": "Erlang: Module Gen"
+			},
+			{
+				"command": "erlang-project-outline.refreshEntry",
+				"title": "Refresh",
+				"icon": {
+				  "light": "images/light/refresh.svg",
+				  "dark": "images/dark/refresh.svg"
+				}
+			}
+		],
+		"menus": {
+			"view/title": [
+			  {
+				"command": "erlang-project-outline.refreshEntry",
+				"when": "view == erlang-project-outline",
+				"group": "navigation"
+			  }
+			]
+		},
+		"viewsContainers": {
+			"activitybar": [
+			  {
+				"id": "erlang-code-generation-project-explorer",
+				"title": "Erlang Project Explorer",
+				"icon": "images/erlang-icon.svg"
+			  }
+			]
 		}
 	},
 	"scripts": {

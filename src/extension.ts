@@ -15,10 +15,9 @@ export function activate(context: vscode.ExtensionContext) {
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
 	if (rootPath !== undefined) {
-		vscode.window.registerTreeDataProvider("erlang-project-outline", new edp.ErlangDataProvider(rootPath));
-		// vscode.commands.registerCommand("exampleTreeView.selectNode", (item:vscode.TreeItem) => {
-		// 	console.log(item.label);
-		// });
+		var EDP = new edp.ErlangDataProvider(rootPath);
+		vscode.window.registerTreeDataProvider("erlang-project-outline", EDP);
+		vscode.commands.registerCommand('erlang-project-outline.refreshEntry', () => EDP.refresh());
 	}
 
 	// Turned on in dev to generate docs

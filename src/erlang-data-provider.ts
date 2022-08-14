@@ -3,8 +3,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
+
+	private _onDidChangeTreeData: vscode.EventEmitter<ModuleInfo | undefined | void> = new vscode.EventEmitter<ModuleInfo | undefined | void>();
+	readonly onDidChangeTreeData: vscode.Event<ModuleInfo | undefined | void> = this._onDidChangeTreeData.event;
+  readonly matchFunctionRegex: RegExp = /^([a-z0-9_]*)\(([^)]*)?\)\s(?:when ([^-]*))?->/gms;
+
   constructor(private workspaceRoot: string) {
-    }
+  }
+
+  refresh(): void {
+		this._onDidChangeTreeData.fire();
+	}
 
   getTreeItem(element: ModuleInfo): vscode.TreeItem {
     return element;
@@ -18,29 +27,59 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
 
     if (element) {
       return Promise.resolve(
-        this.readFilesInFolder(
-          path.join(this.workspaceRoot, element.fileName)
+        this.readFileForMetadata(
+          path.join(this.workspaceRoot, path.join(element.filePath, element.fileName))
         )
       );
     } else {
-      return Promise.resolve(this.readFilesInFolder(this.workspaceRoot));
+      return Promise.resolve(this.readFilesInFolder(this.workspaceRoot, ""));
     }
   }
 
-  /**
-   * Given the path to package.json, read all its dependencies and devDependencies.
-   */
-  private readFilesInFolder(solutionPath: string): ModuleInfo[] {
-    if (this.pathExists(solutionPath)) {
+  private readFilesInFolder(solutionPath: string, projectPath:string): ModuleInfo[] {
+    var currentFolderPath = path.join(solutionPath, projectPath);
+    if (this.pathExists(currentFolderPath)) {
 
         let deps: ModuleInfo[] = [];
-        var fileNames = fs.readdirSync(solutionPath);
+        var fileNames = fs.readdirSync(currentFolderPath);
         fileNames.forEach(file => {
-            var stat = fs.lstatSync(path.join(solutionPath, file));
+            var ext =  file.split('.').pop();
+            var fileType = "Unknown";
+            switch(ext) {
+              case "erl": {
+                fileType = "Module";
+                break; 
+              }
+              case "hrl": {
+                fileType = "Header";
+                break; 
+              }
+              case "escript": {
+                fileType = "EScript";
+                break; 
+              }
+              case "config": {
+                fileType = "Config";
+                break; 
+              }
+              case "src": {
+                fileType = "Application Resource";
+                break; 
+              }
+              case "app": {
+                fileType = "Application Resource";
+                break; 
+              }
+              default:
+                if (ext !== undefined) {
+                  fileType = ext;
+                }
+            }
+            var stat = fs.lstatSync(path.join(currentFolderPath, file));
             if (stat.isFile()) {
-                deps.push(new ModuleInfo(file, "File", vscode.TreeItemCollapsibleState.Collapsed));
+                deps.push(new ModuleInfo(file, projectPath, fileType, vscode.TreeItemCollapsibleState.Collapsed));
             } else if (stat.isDirectory()) {
-                var items = this.readFilesInFolder(path.join(solutionPath, file));
+                var items = this.readFilesInFolder(path.join(solutionPath), path.join(projectPath, file));
                 deps = deps.concat(items);
             }
         });
@@ -59,15 +98,41 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
     }
     return true;
   }
+
+  private readFileForMetadata(filePath:string): ModuleInfo[] {
+    var module = fs.readFileSync(filePath,'utf8');
+    this.matchInModule(this.matchFunctionRegex, module);
+    return [];
+  };
+
+  private matchInModule(structureGetter:RegExp, module:string) : void {
+    var arr;
+    while (arr = structureGetter.exec(module)) {
+      // 1 = function name
+      // 2 = inputs (Optional)
+      // 3 = guards (Optional)
+      console.log("Next match");
+      if (arr[1] !== undefined) {
+        console.log(arr[1]);
+      }
+      if (arr[2] !== undefined) {
+        console.log(arr[2]);
+      }
+      if (arr[3] !== undefined) {
+        console.log(arr[3]);
+      }
+    }
+  };
 }
 
 class ModuleInfo extends vscode.TreeItem {
   constructor(
     public readonly fileName: string,
+    public readonly filePath: string,
     public readonly type: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(fileName, collapsibleState);
+    super(path.join(filePath, fileName), collapsibleState);
     this.tooltip = `${this.label}-${this.type}`;
     this.description = this.type;
   }
