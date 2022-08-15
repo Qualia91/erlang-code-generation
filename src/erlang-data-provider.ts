@@ -6,8 +6,14 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
 
 	private _onDidChangeTreeData: vscode.EventEmitter<ModuleInfo | undefined | void> = new vscode.EventEmitter<ModuleInfo | undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<ModuleInfo | undefined | void> = this._onDidChangeTreeData.event;
-  readonly matchFunctionRegex: RegExp = /^([a-z0-9_]*)\(([^)]*)?\)\s(?:when ([^-]*))?->/gms;
 
+  readonly matchFunctionRegex: RegExp = /^([a-z0-9_]*)\(([^)]*)?\)\s(?:when ([^-]*))?->/gms;
+  readonly matchBehaviourRegex: RegExp = /^-behaviour\(([a-z0-9_]*)\)./gm;
+  readonly matchDefineRegex: RegExp = /^-define\(([^,]*),(?:\s)([^,]*)\)./gm;
+  readonly matchExportRegex: RegExp = /^-export\((?:\s*)\[([^\]]*)\](?:\s*)\)./gms;
+  readonly matchRecordRegex: RegExp = /^-record\(([a-z0-9_]*,\s*){([a-z0-9_:\(\),\s*]*)}\)./gms;
+  readonly matchTestFunctionsRegex: RegExp = /^([a-z0-9_]*)_test\(([^)]*)?\)\s->/gms;
+  
   constructor(private workspaceRoot: string) {
   }
 
@@ -101,13 +107,19 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
 
   private readFileForMetadata(filePath:string): ModuleInfo[] {
     var module = fs.readFileSync(filePath,'utf8');
-    this.matchInModule(this.matchFunctionRegex, module);
+    this.matchInModule(this.matchFunctionRegex, module, this.functionMatchSwitch);
     return [];
   };
 
-  private matchInModule(structureGetter:RegExp, module:string) : void {
+  private matchInModule(structureGetter:RegExp, module:string, switchFunction:Function) : void {
     var arr;
     while (arr = structureGetter.exec(module)) {
+      switchFunction(arr);
+    }
+  };
+
+  private functionMatchSwitch(arr:RegExpExecArray) {
+    var funcMap = new Map<string, string>();
       // 1 = function name
       // 2 = inputs (Optional)
       // 3 = guards (Optional)
@@ -121,8 +133,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<ModuleInfo> {
       if (arr[3] !== undefined) {
         console.log(arr[3]);
       }
-    }
-  };
+  }
 }
 
 class ModuleInfo extends vscode.TreeItem {
