@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 
 import * as docsGen from './generators/docsGen';
 
-import * as edp from './erlang-data-provider'
+import * as edp from './erlang-data-provider';
 
 import * as moduleGen from './generators/moduleGen';
 import * as commentGen from './generators/commentGen';
