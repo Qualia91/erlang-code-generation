@@ -6,8 +6,9 @@ export class RegexFunctions {
 
   public static matchFunctionRegex: RegExp = /^([a-z0-9_]*)\(([^)]*)?\)\s(?:when ([^-]*))?->/gms;
   public static matchFunctionInputsRegex: RegExp = /((?:[a-zA-Z0-9_]+)+),?\s?/gms;
-  public static matchBehaviourRegex: RegExp = /^-behaviour\(([a-z0-9_]*)\)./gm;
-  public static matchDefineRegex: RegExp = /^-define\(([^,]*),(?:\s)([^,]*)\)./gm;
+  public static matchBehaviourRegex: RegExp = /^-behaviour\(([a-z0-9_]*)\)./gms;
+  public static matchDefineRegex: RegExp = /^-define\(([^,]*),(?:\s)([^)]*)\)./gms;
+  public static matchTypeRegex: RegExp = /^-type ([^(]*)/gms;
   public static matchExportRegex: RegExp = /^-export\((?:\s*)\[([^\]]*)\](?:\s*)\)./gms;
   public static matchWithinExportRegex: RegExp = /([a-zA-Z0-9_]+)\/?\d?,?\s*/gms;
   public static matchRecordRegex: RegExp = /^-record\(([a-z0-9_]*),\s*{\s*([a-z0-9_:=.\(\),\s*]*)}\)./gms;
@@ -56,7 +57,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
   }
 
   private readFilesInFolder(solutionPath: string, projectPath:string): vscode.TreeItem[] {
-    if (projectPath.includes("_build")) {
+    if (projectPath.includes("_build") || projectPath.includes(".git")) {
       return [];
     }
     var currentFolderPath = path.join(solutionPath, projectPath);
@@ -136,6 +137,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
     var treeItems = this.matchInModule(RegexFunctions.matchBehaviourRegex, module, this.behaviourMatchSwitch);
     treeItems = treeItems.concat(this.matchInModule(RegexFunctions.matchDefineRegex, module, this.defineMatchSwitch));
     treeItems = treeItems.concat(this.matchInModule(RegexFunctions.matchRecordRegex, module, this.defineRecordSwitch));
+    treeItems = treeItems.concat(this.matchInModule(RegexFunctions.matchTypeRegex, module, this.defineTypeSwitch));
     treeItems = treeItems.concat(this.matchInModule(RegexFunctions.matchFunctionRegex, module, functionMatchSwitchCurr));
 
     return treeItems;
@@ -178,27 +180,17 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
   };
 
   private functionMatchSwitch(arr:RegExpExecArray, exports:string[], testFunctions:string[]): vscode.TreeItem {
-    // 1 = function name
-    // 2 = inputs (Optional)
-    // 3 = guards (Optional)
     var funcName = "";
-    var inputs = [];
+    var inputs: string[] | any[] = [];
     var guards = "";
     if (arr[1] !== undefined) {
       funcName = arr[1];
     }
     if (arr[2] !== undefined) {
-
-      var inputArr;
-      while (inputArr = RegexFunctions.matchFunctionInputsRegex.exec(arr[2])) {
-        inputs.push(inputArr[1]);
-      }
-      
+      inputs = inputGetter(arr[2]);
     }
     if (arr[3] !== undefined) {
-      
       guards = arr[3];
-
     }
 
     return new FunctionInfo(
@@ -221,6 +213,19 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
     }
 
     return new BehaviourInfo(
+      name,
+      vscode.TreeItemCollapsibleState.None
+    );
+
+  }
+
+  private defineTypeSwitch(arr:RegExpExecArray): vscode.TreeItem {
+    var name = "";
+    if (arr[1] !== undefined) {
+      name = arr[1];
+    }
+
+    return new TypeInfo(
       name,
       vscode.TreeItemCollapsibleState.None
     );
@@ -273,7 +278,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 
     return new RecordInfo(
       name,
-      simpleVariables.toString(),
+      simpleVariables.join("\n"),
       variables,
       vscode.TreeItemCollapsibleState.None
     );
@@ -310,11 +315,11 @@ class FunctionInfo extends vscode.TreeItem {
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
     super(functionName + "/" + arity, collapsibleState);
-    this.tooltip = `${this.label}`;
+    this.tooltip = inputs.join("\n");
     if (guards !== "") {
-      this.description = inputs.toString().replace(/,/g, ", ") + " when " + guards;
+      this.description = " when " + guards;
     } else {
-      this.description = inputs.toString().replace(/,/g, ", ");
+      this.description = "";
     }
     if (isPublic) {
       this.iconPath = {
@@ -340,7 +345,7 @@ class BehaviourInfo extends vscode.TreeItem {
     public readonly name: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super("Behaviour: " + name, collapsibleState);
+    super(name, collapsibleState);
     this.tooltip = `${this.label}`;
     this.description = "";
   }
@@ -348,6 +353,22 @@ class BehaviourInfo extends vscode.TreeItem {
   iconPath = {
     light: path.join(__filename, '..', '..', 'images', 'light', 'behaviour.svg'),
     dark: path.join(__filename, '..', '..', 'images', 'dark', 'behaviour.svg')
+  };
+}
+
+class TypeInfo extends vscode.TreeItem {
+  constructor(
+    public readonly name: string,
+    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+  ) {
+    super(name, collapsibleState);
+    this.tooltip = `${this.label}`;
+    this.description = "";
+  }
+
+  iconPath = {
+    light: path.join(__filename, '..', '..', 'images', 'light', 'type.svg'),
+    dark: path.join(__filename, '..', '..', 'images', 'dark', 'type.svg')
   };
 }
 
@@ -412,4 +433,35 @@ class RecordVar {
     }
     this.index++;
   }
+}
+
+function inputGetter(str:string):string[] {
+  var inputs: string[] = [''];
+  var inputIndex = 0;
+  var bracketDepth = 0;
+  var listDepth = 0;
+  for (var i = 0; i < str.length; i++) {
+    var char = str.charAt(i);
+    if (listDepth === 0 && bracketDepth === 0 && char === ",") {
+      inputIndex++;
+    } else if (/\s/.test(char)) {
+
+    } else {
+      if (char === "{") {
+        bracketDepth++;
+      } else if (char === "}") {
+        bracketDepth--;
+      }
+      if (char === "[") {
+        listDepth++;
+      } else if (char === "]") {
+        listDepth--;
+      }
+      if (inputIndex >= inputs.length) {
+        inputs.push('');
+      }
+      inputs[inputIndex] = inputs[inputIndex].concat(char);
+    }
+  }
+  return inputs;
 }
