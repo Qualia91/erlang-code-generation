@@ -18,11 +18,31 @@
 	],
 	"activationEvents": [
 		"onCommand:erlang-code-generation.comment-gen",
-		"onCommand:erlang-code-generation.module-gen"
+		"onCommand:erlang-code-generation.module-gen",
+		"onView:erlang-project-outline",
+		"onCommand:erlang-project-outline.refreshEntry"
 	],
 	"main": "./dist/extension.js",
 	"files": ["./templates/sectionCommentTemplate.txt"],
 	"contributes": {
+		"snippets": [
+			{
+			  "language": "erlang",
+			  "path": "./snippets/erlang.json"
+			}
+		],
+		"views": {
+		  "erlang-code-generation-project-explorer": [
+			{
+			  "id": "package-dependencies",
+			  "name": "Dependencies"
+			},
+			{
+			  "id": "erlang-project-outline",
+			  "name": "Project Outline"
+			}
+		  ]
+		},
 		"commands": [
 			{
 				"command": "erlang-code-generation.comment-gen",
@@ -31,14 +51,34 @@
 			{
 				"command": "erlang-code-generation.module-gen",
 				"title": "Erlang: Module Gen"
+			},
+			{
+				"command": "erlang-project-outline.refreshEntry",
+				"title": "Refresh",
+				"icon": {
+				  "light": "images/light/refresh.svg",
+				  "dark": "images/dark/refresh.svg"
+				}
 			}
 		],
-		"snippets": [
-			{
-			  "language": "erlang",
-			  "path": "./snippets/erlang.json"
-			}
-		  ]
+		"menus": {
+			"view/title": [
+			  {
+				"command": "erlang-project-outline.refreshEntry",
+				"when": "view == erlang-project-outline",
+				"group": "navigation"
+			  }
+			]
+		},
+		"viewsContainers": {
+			"activitybar": [
+			  {
+				"id": "erlang-code-generation-project-explorer",
+				"title": "Erlang Project Explorer",
+				"icon": "images/erlang-icon.svg"
+			  }
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",

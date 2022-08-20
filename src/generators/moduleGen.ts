@@ -80,6 +80,9 @@ function createModule(editor:vscode.TextEditor, item:string):string {
         case "EScript":
             return generateModuleTemplate("escript.template");
 
+        case "EScript":
+            return generateModuleTemplate("escript.template");
+
 		default:
 			return generateModuleTemplate("emptyModule.template");
 	}

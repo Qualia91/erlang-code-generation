@@ -3,11 +3,22 @@ import * as vscode from 'vscode';
 
 import * as docsGen from './generators/docsGen';
 
+import * as edp from './erlang-data-provider';
+
 import * as moduleGen from './generators/moduleGen';
 import * as commentGen from './generators/commentGen';
 import * as utils from './generic/utils';
 
 export function activate(context: vscode.ExtensionContext) {
+	const rootPath =
+		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+		? vscode.workspace.workspaceFolders[0].uri.fsPath
+		: undefined;
+	if (rootPath !== undefined) {
+		var EDP = new edp.ErlangDataProvider(rootPath);
+		vscode.window.registerTreeDataProvider("erlang-project-outline", EDP);
+		vscode.commands.registerCommand('erlang-project-outline.refreshEntry', () => EDP.refresh());
+	}
 
 	// Turned on in dev to generate docs
 	// docsGen.generateDocs();
