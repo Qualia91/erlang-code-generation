@@ -34,10 +34,6 @@
 		"views": {
 		  "erlang-code-generation-project-explorer": [
 			{
-			  "id": "package-dependencies",
-			  "name": "Dependencies"
-			},
-			{
 			  "id": "erlang-project-outline",
 			  "name": "Project Outline"
 			}
