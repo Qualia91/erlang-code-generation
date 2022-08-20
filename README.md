@@ -6,7 +6,12 @@ This is an Extension for Visual Studio Code to generate some boilerplate code fo
 
 # Features
 
-Currently Supported Generation:
+## Side bar
+Version 1 introduces the project explorer, which gives you a top level view of your project and all the files within. Selecting a module or one of the items within one (definitions, macros, records, types, exported functions, imported function, tests) will take you to the module and the line number the sub item is found out.
+
+![Side Bar](images/side_bar_image.png)
+
+## Currently Supported Generation:
 - [Comments](#comments)
     - [Header](#header)
     - [Section](#section)
@@ -38,8 +43,8 @@ Currently Supported Generation:
 	- [cowboy web supervisor: cows](#cowboy-web-supervisor)
 	- [worker child specs: works](#worker-child-specs)
 	- [supervisor child specs: sups](#supervisor-child-specs)
-	- [comment: section: comsec](#comment:-section)
-	- [comment: function: funsec](#comment:-function)
+	- [comment: section: comsec](#comment-section)
+	- [comment: function: funsec](#comment-function)
 
 
 # Docs
