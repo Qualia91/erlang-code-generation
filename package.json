@@ -1,8 +1,8 @@
 {
 	"name": "erlang-code-generation",
 	"displayName": "erlang-code-generation",
-	"description": "Generates boiler plate erlang code",
-	"version": "0.1.0",
+	"description": "Erlang Quality of Life Improvements",
+	"version": "0.1.1",
 	"publisher": "bocdev", 
 	"license": "LICENSE.md",
 	"repository": {
@@ -55,6 +55,14 @@
 				  "light": "images/light/refresh.svg",
 				  "dark": "images/dark/refresh.svg"
 				}
+			},
+			{
+			  "command": "erlang-project-outline.copyEntry",
+			  "title": "Add to Clipboard",
+			  "icon": {
+				"light": "images/light/edit.svg",
+				"dark": "images/dark/edit.svg"
+			  }
 			}
 		],
 		"menus": {
@@ -64,6 +72,13 @@
 				"when": "view == erlang-project-outline",
 				"group": "navigation"
 			  }
+			],
+			"view/item/context": [
+				{
+				  "command": "erlang-project-outline.copyEntry",
+				  "when": "view == erlang-project-outline && viewItem == module_data",
+				  "group": "inline"
+				}
 			]
 		},
 		"viewsContainers": {

@@ -13,9 +13,9 @@ export class RegexFunctions {
   public static matchWithinExportRegex: RegExp = /([a-zA-Z0-9_]+)\/?\d?,?\s*/gms;
   public static matchRecordRegex: RegExp = /^-record\(([a-z0-9_]*),\s*{\s*([a-z0-9_:=.\(\),\s*]*)}\)./gms;
   public static matchRecordValuesVarsRegex: RegExp = /\s*([^,]+)\s*/gms;
-  public static matchRecordValueVarRegex: RegExp = /([a-zA-Z0-9().{}]+:?[a-zA-Z0-9().{}]*)/gms; // 1 = name, 2 is either nothing, type or value, 3 is either nothing or value
+  public static matchRecordValueVarRegex: RegExp = /([a-zA-Z0-9().{}_]+:?[a-zA-Z0-9().{}_]*)/gms; // 1 = name, 2 is either nothing, type or value, 3 is either nothing or value
   public static matchTestFunctionsRegex: RegExp = /^([a-z0-9_]*_test)\(([^)]*)?\)\s->/gms;
-  
+  public static matchFileNameRegex: RegExp = /([^\\\/.]+).[^.]*$/gm;
 }
 
 export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
@@ -26,6 +26,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
   constructor(private workspaceRoot: string) {
     vscode.commands.registerCommand('module.show_file', openTextDocument);
     vscode.commands.registerCommand('module.show_file_line', openTextDocumentAtLine);
+		vscode.commands.registerCommand('erlang-project-outline.copyEntry', (moduleData: ModuleData) => vscode.env.clipboard.writeText(moduleData.clipboard));
   }
 
   refresh(): void {
@@ -351,12 +352,15 @@ class ModuleInfo extends vscode.TreeItem {
     "command": "module.show_file",
     "arguments": [path.join(this.filePath, this.fileName)]
   };
+
+  contextValue = 'module_info';
 }
 
 class ModuleData extends vscode.TreeItem {
   constructor(
       label: string,
       collapsibleState: vscode.TreeItemCollapsibleState,
+      public readonly clipboard: string,
       public readonly filePath:string,
       public readonly lineNumber:number) {
     super(label, collapsibleState);
@@ -367,6 +371,8 @@ class ModuleData extends vscode.TreeItem {
     "command": "module.show_file_line",
     "arguments": [this.filePath, this.lineNumber]
   };
+
+  contextValue = 'module_data';
 }
 
 class FunctionInfo extends ModuleData {
@@ -381,7 +387,7 @@ class FunctionInfo extends ModuleData {
     public readonly isTestFunction: boolean,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(functionName + "/" + arity, collapsibleState, filePath, lineNumber);
+    super(functionName + "/" + arity, collapsibleState, functionBeginning(filePath, isPublic) + functionName + "(" + inputs.join(", ") + ")", filePath, lineNumber);
     this.tooltip = inputs.join("\n");
     if (guards !== "") {
       this.description = " when " + guards;
@@ -407,6 +413,18 @@ class FunctionInfo extends ModuleData {
   }
 }
 
+function functionBeginning(filePath:string, isPublic:boolean):string {
+  if (!isPublic) {
+    return "";
+  }
+  var fileName = "";
+  var arr;
+  while (arr = RegexFunctions.matchFileNameRegex.exec(filePath)) {
+    fileName = arr[1];
+  }
+  return fileName + ":";
+}
+
 class BehaviourInfo extends ModuleData {
   constructor(
     filePath: string,
@@ -414,7 +432,7 @@ class BehaviourInfo extends ModuleData {
     public readonly name: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(name, collapsibleState, filePath, lineNumber);
+    super(name, collapsibleState, "-behaviour(" + name + ").", filePath, lineNumber);
     this.tooltip = `${this.label}`;
     this.description = "";
   }
@@ -432,7 +450,7 @@ class TypeInfo extends ModuleData {
     public readonly name: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(name, collapsibleState, filePath, lineNumber);
+    super(name, collapsibleState, name + "()", filePath, lineNumber);
     this.tooltip = `${this.label}`;
     this.description = "";
   }
@@ -451,7 +469,7 @@ class DefineInfo extends ModuleData {
     public readonly action: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(name, collapsibleState, filePath, lineNumber);
+    super(name, collapsibleState, "?" + name, filePath, lineNumber);
     this.tooltip = `${this.label}`;
     this.description = action;
   }
@@ -471,9 +489,9 @@ class RecordInfo extends ModuleData {
     public readonly variables: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(name, collapsibleState, filePath, lineNumber);
+    super(name, collapsibleState, "#" + name + "{" + simpleVariables.replace(/\n/g, ", ") + "}", filePath, lineNumber);
     this.tooltip = variables;
-    this.description = simpleVariables;   
+    this.description = simpleVariables.replace(/\n/g, ", ");   
   }
 
   iconPath = {
