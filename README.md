@@ -7,7 +7,7 @@ This is an Extension for Visual Studio Code to generate some boilerplate code fo
 # Features
 
 ## Side bar
-Version 1 introduces the project explorer, which gives you a top level view of your project and all the files within. Selecting a module or one of the items within one (definitions, macros, records, types, exported functions, imported function, tests) will take you to the module and the line number the sub item is found out.
+Version 1 introduces the project explorer, which gives you a top level view of your project and all the files within. Selecting a module or one of the items within one (definitions, macros, records, types, exported functions, imported function, tests) will take you to the module and the line number the sub item is found out. Pressing the pen icon on module items will copy it to your clipboard so you can use said item.
 
 ![Side](https://github.com/qualia91/erlang-code-generation/blob/master/images/side_bar_image.png?raw=true)
 
