@@ -2,7 +2,7 @@
 	"name": "erlang-code-generation",
 	"displayName": "erlang-code-generation",
 	"description": "Erlang Quality of Life Improvements",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher": "bocdev", 
 	"license": "LICENSE.md",
 	"repository": {

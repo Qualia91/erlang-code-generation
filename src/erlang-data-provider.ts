@@ -22,6 +22,8 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 
 	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
+
+  private ignoreFolders = ["_build", ".git", ".erlang.mk", "deps", "ebin"];
   
   constructor(private workspaceRoot: string) {
     vscode.commands.registerCommand('module.show_file', openTextDocument);
@@ -60,7 +62,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
   }
 
   private readFilesInFolder(solutionPath: string, projectPath:string): vscode.TreeItem[] {
-    if (projectPath.includes("_build") || projectPath.includes(".git")) {
+    if (this.ignoreFolders.some(ignoreFolder => projectPath.includes(ignoreFolder))) {
       return [];
     }
     var currentFolderPath = path.join(solutionPath, projectPath);
