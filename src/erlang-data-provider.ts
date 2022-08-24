@@ -23,7 +23,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
-  private ignoreFolders = ["_build", ".git", ".erlang.mk", "deps", "ebin"];
+  private ignoreFolders = ["_build", ".git", ".erlang.mk", "deps", "ebin", "_rel"];
   
   constructor(private workspaceRoot: string) {
     vscode.commands.registerCommand('module.show_file', openTextDocument);
