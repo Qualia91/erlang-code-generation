@@ -16,6 +16,7 @@ export class RegexFunctions {
   public static matchRecordValueVarRegex: RegExp = /([a-zA-Z0-9().{}_]+:?[a-zA-Z0-9().{}_]*)/gms; // 1 = name, 2 is either nothing, type or value, 3 is either nothing or value
   public static matchTestFunctionsRegex: RegExp = /^([a-z0-9_]*_test)\(([^)]*)?\)\s->/gms;
   public static matchFileNameRegex: RegExp = /([^\\\/.]+).[^.]*$/gm;
+  public static matchCallbacksRegex: RegExp = /^-callback ([^\(]*)\(([^-]*)\) ->([^.]*)./gms;
 }
 
 export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
@@ -140,9 +141,10 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
     var textFunctions = this.getTestFunctions(module);
     const functionMatchSwitchCurr = (filePath:string, module:string, arr:RegExpExecArray) => this.functionMatchSwitch(filePath, module, arr, exports, textFunctions);
     var treeItems = this.matchInModule(filePath, RegexFunctions.matchBehaviourRegex, module, this.behaviourMatchSwitch);
-    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchDefineRegex, module, this.defineMatchSwitch));
-    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchRecordRegex, module, this.defineRecordSwitch));
-    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchTypeRegex, module, this.defineTypeSwitch));
+    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchCallbacksRegex, module, this.callbackSwitch));
+    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchDefineRegex, module, this.matchSwitch));
+    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchRecordRegex, module, this.recordSwitch));
+    treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchTypeRegex, module, this.typeSwitch));
     treeItems = treeItems.concat(this.matchInModule(filePath, RegexFunctions.matchFunctionRegex, module, functionMatchSwitchCurr));
 
     return treeItems;
@@ -228,22 +230,32 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 
   }
 
-  private defineTypeSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
+  private callbackSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
     var name = "";
+    var inputs = "";
+    var returns = "";
     if (arr[1] !== undefined) {
       name = arr[1];
     }
+    if (arr[2] !== undefined) {
+      inputs = arr[2].replace(/\r?\n|\r/g, " ");
+    }
+    if (arr[3] !== undefined) {
+      returns = arr[3];
+    }
 
-    return new TypeInfo(
+    return new CallbackInfo(
       filePath,
-      findLineNumber(module, "-type " + name),
+      findLineNumber(module, "-callback " + name),
       name,
+      inputs,
+      returns,
       vscode.TreeItemCollapsibleState.None
     );
 
   }
 
-  private defineMatchSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
+  private matchSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
     // 1 = function name
     var name = "";
     var action = "";
@@ -264,7 +276,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 
   }
 
-  private defineRecordSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
+  private recordSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
     var name = "";
     var simpleVariables = [];
     var variables = "";
@@ -295,6 +307,21 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
       name,
       simpleVariables.join("\n"),
       variables,
+      vscode.TreeItemCollapsibleState.None
+    );
+
+  }
+
+  private typeSwitch(filePath:string, module:string, arr:RegExpExecArray): vscode.TreeItem {
+    var name = "";
+    if (arr[1] !== undefined) {
+      name = arr[1];
+    }
+
+    return new TypeInfo(
+      filePath,
+      findLineNumber(module, "-type " + name),
+      name,
       vscode.TreeItemCollapsibleState.None
     );
 
@@ -339,7 +366,7 @@ class ModuleInfo extends vscode.TreeItem {
     public readonly type: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(path.join(filePath, fileName), collapsibleState);
+    super(fileName, collapsibleState);
     this.tooltip = `${this.label}-${this.type}`;
     this.description = this.type;
   }
@@ -442,6 +469,25 @@ class BehaviourInfo extends ModuleData {
   iconPath = {
     light: path.join(__filename, '..', '..', 'images', 'light', 'behaviour.svg'),
     dark: path.join(__filename, '..', '..', 'images', 'dark', 'behaviour.svg')
+  };
+}
+class CallbackInfo extends ModuleData {
+  constructor(
+    filePath: string,
+    lineNumber: number,
+    public readonly name: string,
+    public readonly inputs: string,
+    public readonly returns: string,
+    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+  ) {
+    super(name, collapsibleState, name + "(" + inputs + ") ->" + returns + ".", filePath, lineNumber);
+    this.tooltip = `${this.label}`;
+    this.description = inputs;
+  }
+
+  iconPath = {
+    light: path.join(__filename, '..', '..', 'images', 'light', 'callback.svg'),
+    dark: path.join(__filename, '..', '..', 'images', 'dark', 'callback.svg')
   };
 }
 
