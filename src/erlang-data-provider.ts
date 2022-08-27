@@ -121,7 +121,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
             var stat = fs.lstatSync(path.join(currentFolderPath, file));
             if (stat.isFile() && knownExt) {
                 deps.push(new ModuleInfo(file, projectPath, fileType, vscode.TreeItemCollapsibleState.Collapsed));
-            } else if (stat.isDirectory()) {
+            } else if (stat.isDirectory() && !this.ignoreFolders.some(ignoreFolder => file.includes(ignoreFolder))) {
                 deps.unshift(new FolderItem(file, projectPath, vscode.TreeItemCollapsibleState.Collapsed));
             }
         });
