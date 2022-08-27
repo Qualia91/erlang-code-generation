@@ -2,7 +2,7 @@
 	"name": "erlang-code-generation",
 	"displayName": "Erlang QoL",
 	"description": "Erlang Quality of Life Improvements",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"publisher": "bocdev", 
 	"license": "LICENSE.md",
 	"repository": {
@@ -11,7 +11,7 @@
 	},
 	"homepage": "https://github.com/Qualia91/erlang-code-generation",
 	"bugs": {
-	"url": "https://github.com/Qualia91/erlang-code-generation/issues"
+		"url": "https://github.com/Qualia91/erlang-code-generation/issues"
 	},
 	"engines": {
 		"vscode": "^1.60.0"

@@ -49,6 +49,13 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 
     if (element) {
 
+      if (element instanceof FolderItem) {
+        return Promise.resolve(
+          this.readFilesInFolder(
+            this.workspaceRoot, path.join(element.filePath, element.fileName)
+          )
+        );
+      }
       if (!(element instanceof ModuleInfo)) {
         return Promise.resolve([]);
       }
@@ -115,8 +122,7 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
             if (stat.isFile() && knownExt) {
                 deps.push(new ModuleInfo(file, projectPath, fileType, vscode.TreeItemCollapsibleState.Collapsed));
             } else if (stat.isDirectory()) {
-                var items = this.readFilesInFolder(path.join(solutionPath), path.join(projectPath, file));
-                deps = deps.concat(items);
+                deps.unshift(new FolderItem(file, projectPath, vscode.TreeItemCollapsibleState.Collapsed));
             }
         });
 
@@ -359,6 +365,18 @@ export function openTextDocumentAtLine(filePath:string, lineNumber:number) {
       }));
 }
 
+class FolderItem extends vscode.TreeItem {
+  constructor(
+    public readonly fileName: string,
+    public readonly filePath: string,
+    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+  ) {
+    super(fileName, collapsibleState);
+    this.tooltip = this.filePath;
+    this.description = 'Folder';
+  }
+}
+
 class ModuleInfo extends vscode.TreeItem {
   constructor(
     public readonly fileName: string,
@@ -471,6 +489,7 @@ class BehaviourInfo extends ModuleData {
     dark: path.join(__filename, '..', '..', 'images', 'dark', 'behaviour.svg')
   };
 }
+
 class CallbackInfo extends ModuleData {
   constructor(
     filePath: string,
@@ -481,7 +500,7 @@ class CallbackInfo extends ModuleData {
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
     super(name, collapsibleState, name + "(" + inputs + ") ->" + returns + ".", filePath, lineNumber);
-    this.tooltip = `${this.label}`;
+    this.tooltip = returns;
     this.description = inputs;
   }
 
