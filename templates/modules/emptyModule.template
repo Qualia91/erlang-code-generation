@@ -9,12 +9,6 @@
 
 -define(SERVER, ?MODULE).
 
-%% example record
--record(example_record, {
-
-}).
--type example_record() :: example_record.
-
 <SECTION_COMMENT>API
 
 <SECTION_COMMENT>Internal functions

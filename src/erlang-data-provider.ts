@@ -27,9 +27,32 @@ export class ErlangDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
   private ignoreFolders = ["_build", ".git", ".erlang.mk", "deps", "ebin", "_rel"];
   
   constructor(private workspaceRoot: string) {
+	let eunitTests = vscode.window.createOutputChannel("Eunit Tests");
     vscode.commands.registerCommand('module.show_file', openTextDocument);
     vscode.commands.registerCommand('module.show_file_line', openTextDocumentAtLine);
 		vscode.commands.registerCommand('erlang-project-outline.copyEntry', (moduleData: ModuleData) => vscode.env.clipboard.writeText(moduleData.clipboard));
+		vscode.commands.registerCommand('erlang-project-outline.runTests', (moduleInfo: ModuleInfo) => {
+		eunitTests.appendLine('Starting testing of ' + moduleInfo.fileName);
+		var module = path.join(workspaceRoot, moduleInfo.filePath, moduleInfo.fileName);
+		const cp = require('child_process');
+		if (!fs.existsSync(path.join(workspaceRoot, "ebin"))){
+			fs.mkdirSync(path.join(workspaceRoot, "ebin"));
+		};
+		var compiledFolder = path.join(workspaceRoot, "ebin");
+		cp.exec('erlc -o "' + compiledFolder + '" -DTEST=true -I include "' + module + '"', (err:Error, stdout:string | Buffer, stderr:string | Buffer) => {
+			if (err) {
+				eunitTests.appendLine('error during compilation: ' + err);
+			} else {
+				cp.exec('erl -noshell -pa "' + compiledFolder + '" -eval "eunit:test(' + moduleInfo.fileName.replace(/\.[^/.]+$/, "") + ',[verbose])" -s init stop', (err:Error, stdout:string | Buffer, stderr:string | Buffer) => {
+					eunitTests.appendLine("" + stdout);
+					if (err) {
+						eunitTests.appendLine('error during testing: ' + err);
+					}
+				});
+			}
+		});
+		eunitTests.show();
+	});
   }
 
   refresh(): void {
@@ -387,6 +410,12 @@ class ModuleInfo extends vscode.TreeItem {
     super(fileName, collapsibleState);
     this.tooltip = `${this.label}-${this.type}`;
     this.description = this.type;
+
+    if (type === "Module") {
+      this.contextValue = 'erlang_module_info';
+    } else {
+      this.contextValue = 'module_info';
+    }
   }
 
   iconPath = {
@@ -399,8 +428,6 @@ class ModuleInfo extends vscode.TreeItem {
     "command": "module.show_file",
     "arguments": [path.join(this.filePath, this.fileName)]
   };
-
-  contextValue = 'module_info';
 }
 
 class ModuleData extends vscode.TreeItem {
@@ -418,7 +445,7 @@ class ModuleData extends vscode.TreeItem {
     "command": "module.show_file_line",
     "arguments": [this.filePath, this.lineNumber]
   };
-
+  
   contextValue = 'module_data';
 }
 

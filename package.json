@@ -2,7 +2,7 @@
 	"name": "erlang-code-generation",
 	"displayName": "Erlang QoL",
 	"description": "Erlang Quality of Life Improvements",
-	"version": "0.1.6",
+	"version": "0.2.0",
 	"publisher": "bocdev", 
 	"license": "LICENSE.md",
 	"homepage": "https://github.com/Qualia91/erlang-code-generation",
@@ -60,6 +60,14 @@
 				}
 			},
 			{
+				"command": "erlang-project-outline.runTests",
+				"title": "Run Tests",
+				"icon": {
+				  "light": "images/light/test.svg",
+				  "dark": "images/dark/test.svg"
+				}
+			},
+			{
 			  "command": "erlang-project-outline.copyEntry",
 			  "title": "Add to Clipboard",
 			  "icon": {
@@ -80,6 +88,13 @@
 				{
 				  "command": "erlang-project-outline.copyEntry",
 				  "when": "view == erlang-project-outline && viewItem == module_data",
+				  "group": "inline"
+				}
+			],
+			"view/item/context": [
+				{
+				  "command": "erlang-project-outline.runTests",
+				  "when": "view == erlang-project-outline && viewItem == erlang_module_info",
 				  "group": "inline"
 				}
 			]

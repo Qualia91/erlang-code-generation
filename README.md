@@ -12,6 +12,9 @@ Version 1 introduces the project explorer, which gives you a top level view of y
 
 ![Side](https://github.com/qualia91/erlang-code-generation/blob/master/images/side_bar_image.png?raw=true)
 
+## Eunit testing
+By pressing the testing icon to the right of a module in the side panel, it will run the eunit tests in the module and produce the output to an ouput channel called "Eunit Tests".
+
 ## Code Generation and Snippets:
 - [Comments](#comments)
     - [Header](#header)
